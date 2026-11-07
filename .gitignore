@@ -1,0 +1,27 @@
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Backend
+job_recruitment_backend/.env
+job_recruitment_backend/.env.backup
+job_recruitment_backend/.phpunit.result.cache
+job_recruitment_backend/.phpunit.cache/
+job_recruitment_backend/vendor/
+job_recruitment_backend/node_modules/
+job_recruitment_backend/storage/*.key
+job_recruitment_backend/storage/logs/*.log
+job_recruitment_backend/public/storage
+job_recruitment_backend/public/build
+job_recruitment_backend/database/*.sqlite
+job_recruitment_backend/database/*.sqlite-journal
+
+# Frontend
+job_recruitment_app/.dart_tool/
+job_recruitment_app/.flutter-plugins-dependencies
+job_recruitment_app/.pub-cache/
+job_recruitment_app/.pub/
+job_recruitment_app/build/
+job_recruitment_app/.packages
