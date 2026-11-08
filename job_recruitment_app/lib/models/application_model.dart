@@ -60,12 +60,18 @@ class ApplicationModel {
       interviewLocation: json['interview_location'],
       interviewNotes: json['interview_notes'],
       interviewStatus: json['interview_status'],
-      job: json['job'] != null ? JobModel.fromJson(json['job']) : null,
-      cvDocument: json['cv_document'] != null
-          ? DocumentModel.fromJson(json['cv_document'])
+      job: json['job'] is Map
+          ? JobModel.fromJson(Map<String, dynamic>.from(json['job']))
           : null,
-      profile: json['profile'] != null
-          ? JobSeekerProfileModel.fromJson(json['profile'])
+      cvDocument: json['cv_document'] is Map
+          ? DocumentModel.fromJson(
+              Map<String, dynamic>.from(json['cv_document']),
+            )
+          : null,
+      profile: json['profile'] is Map
+          ? JobSeekerProfileModel.fromJson(
+              Map<String, dynamic>.from(json['profile']),
+            )
           : null,
       statusHistories: histories,
     );

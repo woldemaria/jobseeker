@@ -30,12 +30,18 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final docs = await widget.profRepo.getDocuments();
-    if (mounted) {
-      setState(() {
-        _documents = docs;
-        _isLoading = false;
-      });
+    try {
+      final docs = await widget.profRepo.getDocuments();
+      if (mounted) {
+        setState(() {
+          _documents = docs;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -70,7 +76,10 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                     children: [
                       const Text(
                         'Upload Document from Disk',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close),
@@ -82,17 +91,37 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                   const SizedBox(height: 12),
 
                   // Document Type Dropdown
-                  const Text('Document Type', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const Text(
+                    'Document Type',
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
                     value: selectedType,
-                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
                     items: const [
-                      DropdownMenuItem(value: 'cv', child: Text('Curriculum Vitae / Resume (CV)')),
-                      DropdownMenuItem(value: 'certificate', child: Text('Professional Certificate')),
-                      DropdownMenuItem(value: 'transcript', child: Text('Academic Transcript')),
-                      DropdownMenuItem(value: 'verification', child: Text('Verification / Identification Document')),
-                      DropdownMenuItem(value: 'other', child: Text('Other Supporting Document')),
+                      DropdownMenuItem(
+                        value: 'cv',
+                        child: Text('Curriculum Vitae / Resume (CV)'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'certificate',
+                        child: Text('Professional Certificate'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'transcript',
+                        child: Text('Academic Transcript'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'verification',
+                        child: Text('Verification / Identification Document'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'other',
+                        child: Text('Other Supporting Document'),
+                      ),
                     ],
                     onChanged: (val) {
                       if (val != null) setSheetState(() => selectedType = val);
@@ -106,7 +135,14 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                       try {
                         final files = await FilePicker.pickFiles(
                           type: FileType.custom,
-                          allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+                          allowedExtensions: [
+                            'pdf',
+                            'doc',
+                            'docx',
+                            'jpg',
+                            'jpeg',
+                            'png',
+                          ],
                         );
                         if (files.isNotEmpty) {
                           final f = files.first;
@@ -129,7 +165,9 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
                         border: Border.all(
-                          color: pickedName != null ? AppTheme.primaryColor : Colors.grey.shade300,
+                          color: pickedName != null
+                              ? AppTheme.primaryColor
+                              : Colors.grey.shade300,
                           width: pickedName != null ? 2 : 1,
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -137,27 +175,36 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                       child: Column(
                         children: [
                           Icon(
-                            pickedName != null ? Icons.check_circle : Icons.upload_file,
+                            pickedName != null
+                                ? Icons.check_circle
+                                : Icons.upload_file,
                             size: 40,
-                            color: pickedName != null ? AppTheme.primaryColor : Colors.grey.shade600,
+                            color: pickedName != null
+                                ? AppTheme.primaryColor
+                                : Colors.grey.shade600,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            pickedName != null
-                                ? pickedName!
-                                : 'Choose PDF, Word (DOC/DOCX), or image file from disk',
+                            pickedName != null ? pickedName! : 'Choose PDF, Word (DOC/DOCX), or image file from disk',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontWeight: pickedName != null ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: pickedName != null
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               fontSize: 13,
-                              color: pickedName != null ? Colors.black87 : Colors.grey.shade700,
+                              color: pickedName != null
+                                  ? Colors.black87
+                                  : Colors.grey.shade700,
                             ),
                           ),
                           if (pickedSize != null) ...[
                             const SizedBox(height: 4),
                             Text(
                               '${(pickedSize! / 1024).toStringAsFixed(1)} KB',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ],
@@ -209,17 +256,15 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
               ),
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(resp.message)),
-            );
+            ScaffoldMessenger.of(context)
+                .showSnackBar(SnackBar(content: Text(resp.message)));
           }
         }
       } catch (e) {
         if (mounted) {
           setState(() => _isUploading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: $e')),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Upload failed: $e')));
         }
       }
     }
@@ -234,9 +279,16 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
     if (viewInline) {
       queryParams['view'] = '1';
     }
-    final baseUri = Uri.parse('${ApiConstants.baseUrl}/documents/${doc.id}/download');
-    final uri = queryParams.isEmpty ? baseUri : baseUri.replace(queryParameters: queryParams);
-    launchUrl(uri, mode: LaunchMode.externalApplication).catchError((_) => false);
+    final baseUri = Uri.parse(
+      '${ApiConstants.baseUrl}/documents/${doc.id}/download',
+    );
+    final uri = queryParams.isEmpty
+        ? baseUri
+        : baseUri.replace(queryParameters: queryParams);
+    launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    ).catchError((_) => false);
   }
 
   Future<void> _deleteDocument(DocumentModel doc) async {
@@ -246,9 +298,15 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
         title: const Text('Delete Document?'),
         content: Text('Are you sure you want to remove "${doc.originalName}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
@@ -265,9 +323,8 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
             SnackBar(content: Text('Deleted "${doc.originalName}"')),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp.message)),
-          );
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(resp.message)));
         }
       }
     }
@@ -291,97 +348,125 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
             ? const SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               )
             : const Icon(Icons.upload_file, color: Colors.white),
-        label: Text(loc.t('upload_document'), style: const TextStyle(color: Colors.white)),
+        label: Text(
+          loc.t('upload_document'),
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _documents.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.description_outlined, size: 64, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'No CVs or certificates uploaded yet.',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Upload your CV in PDF or DOCX format from your disk or device.',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _isUploading ? null : _pickAndUploadDocument,
-                        icon: const Icon(Icons.upload),
-                        label: Text(loc.t('upload_document')),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(220, 44),
-                        ),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.description_outlined,
+                    size: 64,
+                    color: Colors.grey,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _documents.length,
-                  itemBuilder: (context, index) {
-                    final doc = _documents[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 1.5,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: CircleAvatar(
-                          radius: 22,
-                          backgroundColor: _getDocumentColor(doc.documentType).withOpacity(0.12),
-                          child: Icon(
-                            _getDocumentIcon(doc.documentType),
-                            color: _getDocumentColor(doc.documentType),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No CVs or certificates uploaded yet.',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Upload your CV in PDF or DOCX format from your disk or device.',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: _isUploading ? null : _pickAndUploadDocument,
+                    icon: const Icon(Icons.upload),
+                    label: Text(loc.t('upload_document')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(220, 44),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _documents.length,
+              itemBuilder: (context, index) {
+                final doc = _documents[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 1.5,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    leading: CircleAvatar(
+                      radius: 22,
+                      backgroundColor: _getDocumentColor(doc.documentType)
+                          .withOpacity(0.12),
+                      child: Icon(
+                        _getDocumentIcon(doc.documentType),
+                        color: _getDocumentColor(doc.documentType),
+                      ),
+                    ),
+                    title: Text(
+                      doc.originalName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(
+                          '${doc.documentType.toUpperCase()} • ${doc.formattedSize} • ${doc.createdAt.split('T').first}',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 11.5,
                           ),
                         ),
-                        title: Text(
-                          doc.originalName,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Download / View',
+                          icon: const Icon(
+                            Icons.download_outlined,
+                            color: AppTheme.primaryColor,
+                          ),
+                          onPressed: () => _downloadOrViewDocument(doc),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text(
-                              '${doc.documentType.toUpperCase()} • ${doc.formattedSize} • ${doc.createdAt.split('T').first}',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11.5),
-                            ),
-                          ],
+                        IconButton(
+                          tooltip: 'Delete Document',
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: () => _deleteDocument(doc),
                         ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              tooltip: 'Download / View',
-                              icon: const Icon(Icons.download_outlined, color: AppTheme.primaryColor),
-                              onPressed: () => _downloadOrViewDocument(doc),
-                            ),
-                            IconButton(
-                              tooltip: 'Delete Document',
-                              icon: const Icon(Icons.delete_outline, color: Colors.red),
-                              onPressed: () => _deleteDocument(doc),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 

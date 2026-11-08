@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../services/auth_service.dart';
 import '../../repositories/admin_repository.dart';
 import '../../repositories/advertisement_repository.dart';
@@ -40,56 +41,68 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(milliseconds: 1200));
-    final loggedIn = await widget.authService.checkAuthStatus();
+    try {
+      await Future.delayed(const Duration(milliseconds: 1200));
+      final loggedIn = await widget.authService.checkAuthStatus();
+
+      if (!mounted) return;
+
+      if (loggedIn && widget.authService.currentUser != null) {
+        final user = widget.authService.currentUser!;
+        if (user.isAdmin) {
+          final adminRepo = Provider.of<AdminRepository>(
+            context,
+            listen: false,
+          );
+          final adRepo = Provider.of<AdvertisementRepository>(
+            context,
+            listen: false,
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminMainScreen(
+                adminRepo: adminRepo,
+                adRepo: adRepo,
+                authService: widget.authService,
+              ),
+            ),
+          );
+          return;
+        } else if (user.isEmployer) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EmployerMainScreen(
+                jobRepo: widget.jobRepo,
+                appRepo: widget.appRepo,
+                profRepo: widget.profRepo,
+                apiService: widget.apiService,
+                authService: widget.authService,
+              ),
+            ),
+          );
+          return;
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => JobSeekerMainScreen(
+                jobRepo: widget.jobRepo,
+                appRepo: widget.appRepo,
+                profRepo: widget.profRepo,
+                authService: widget.authService,
+              ),
+            ),
+          );
+          return;
+        }
+      }
+    } catch (_) {
+      // Graceful fallback to login on any connection error
+    }
 
     if (!mounted) return;
-
-    if (loggedIn && widget.authService.currentUser != null) {
-      final user = widget.authService.currentUser!;
-      if (user.isAdmin) {
-        final adminRepo = Provider.of<AdminRepository>(context, listen: false);
-        final adRepo = Provider.of<AdvertisementRepository>(context, listen: false);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminMainScreen(
-              adminRepo: adminRepo,
-              adRepo: adRepo,
-              authService: widget.authService,
-            ),
-          ),
-        );
-        return;
-      } else if (user.isEmployer) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EmployerMainScreen(
-              jobRepo: widget.jobRepo,
-              appRepo: widget.appRepo,
-              profRepo: widget.profRepo,
-              apiService: widget.apiService,
-              authService: widget.authService,
-            ),
-          ),
-        );
-        return;
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => JobSeekerMainScreen(
-              jobRepo: widget.jobRepo,
-              appRepo: widget.appRepo,
-              profRepo: widget.profRepo,
-              authService: widget.authService,
-            ),
-          ),
-        );
-        return;
-      }
-    }
 
     Navigator.pushReplacement(
       context,
@@ -147,7 +160,10 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(
               width: 24,
               height: 24,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
             ),
           ],
         ),

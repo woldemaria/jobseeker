@@ -20,37 +20,68 @@ class EthiopianCategoryData {
 
   IconData get icon {
     switch (iconName) {
-      case 'agriculture': return Icons.agriculture;
-      case 'home': return Icons.home;
-      case 'engineering': return Icons.engineering;
-      case 'chair': return Icons.chair;
-      case 'school': return Icons.school;
-      case 'security': return Icons.security;
-      case 'account_balance': return Icons.account_balance;
-      case 'business_center': return Icons.business_center;
-      case 'shopping_bag': return Icons.shopping_bag;
-      case 'campaign': return Icons.campaign;
-      case 'local_hospital': return Icons.local_hospital;
-      case 'local_shipping': return Icons.local_shipping;
-      case 'hotel': return Icons.hotel;
-      case 'precision_manufacturing': return Icons.precision_manufacturing;
-      case 'computer': return Icons.computer;
-      case 'phone_in_talk': return Icons.phone_in_talk;
-      case 'mic': return Icons.mic;
-      case 'gavel': return Icons.gavel;
-      case 'volunteer_activism': return Icons.volunteer_activism;
-      case 'spa': return Icons.spa;
-      case 'science': return Icons.science;
-      case 'bolt': return Icons.bolt;
-      case 'work': return Icons.work;
-      case 'sports_soccer': return Icons.sports_soccer;
-      case 'water_drop': return Icons.water_drop;
-      case 'brush': return Icons.brush;
-      case 'flight': return Icons.flight;
-      case 'child_care': return Icons.child_care;
-      case 'receipt_long': return Icons.receipt_long;
-      case 'lightbulb': return Icons.lightbulb;
-      default: return Icons.work_outline;
+      case 'agriculture':
+        return Icons.agriculture;
+      case 'home':
+        return Icons.home;
+      case 'engineering':
+        return Icons.engineering;
+      case 'chair':
+        return Icons.chair;
+      case 'school':
+        return Icons.school;
+      case 'security':
+        return Icons.security;
+      case 'account_balance':
+        return Icons.account_balance;
+      case 'business_center':
+        return Icons.business_center;
+      case 'shopping_bag':
+        return Icons.shopping_bag;
+      case 'campaign':
+        return Icons.campaign;
+      case 'local_hospital':
+        return Icons.local_hospital;
+      case 'local_shipping':
+        return Icons.local_shipping;
+      case 'hotel':
+        return Icons.hotel;
+      case 'precision_manufacturing':
+        return Icons.precision_manufacturing;
+      case 'computer':
+        return Icons.computer;
+      case 'phone_in_talk':
+        return Icons.phone_in_talk;
+      case 'mic':
+        return Icons.mic;
+      case 'gavel':
+        return Icons.gavel;
+      case 'volunteer_activism':
+        return Icons.volunteer_activism;
+      case 'spa':
+        return Icons.spa;
+      case 'science':
+        return Icons.science;
+      case 'bolt':
+        return Icons.bolt;
+      case 'work':
+        return Icons.work;
+      case 'sports_soccer':
+        return Icons.sports_soccer;
+      case 'water_drop':
+        return Icons.water_drop;
+      case 'brush':
+        return Icons.brush;
+      case 'flight':
+        return Icons.flight;
+      case 'child_care':
+        return Icons.child_care;
+      case 'receipt_long':
+        return Icons.receipt_long;
+      case 'lightbulb':
+        return Icons.lightbulb;
+      default:
+        return Icons.work_outline;
     }
   }
 }
@@ -788,7 +819,11 @@ class EthiopianJobCatalogue {
   }
 
   /// Suggest titles matching query prefix or substring
-  static List<String> searchTitles(String query, {String? categoryName, int limit = 10}) {
+  static List<String> searchTitles(
+    String query, {
+    String? categoryName,
+    int limit = 10,
+  }) {
     if (query.trim().isEmpty) {
       if (categoryName != null) {
         final cat = categories.firstWhere(
@@ -802,16 +837,26 @@ class EthiopianJobCatalogue {
 
     final q = query.trim().toLowerCase();
     List<String> pool = allTitles;
-    if (categoryName != null && categoryName.isNotEmpty && categoryName != 'All') {
-      final found = categories.where((c) => c.name.toLowerCase() == categoryName.toLowerCase()).toList();
+    if (categoryName != null &&
+        categoryName.isNotEmpty &&
+        categoryName != 'All') {
+      final found = categories
+          .where((c) => c.name.toLowerCase() == categoryName.toLowerCase())
+          .toList();
       if (found.isNotEmpty) {
         pool = found.first.titles;
       }
     }
 
     // Exact prefix matches first, then contains matches
-    final prefixMatches = pool.where((t) => t.toLowerCase().startsWith(q)).toList();
-    final containsMatches = pool.where((t) => !t.toLowerCase().startsWith(q) && t.toLowerCase().contains(q)).toList();
+    final prefixMatches = pool
+        .where((t) => t.toLowerCase().startsWith(q))
+        .toList();
+    final containsMatches = pool
+        .where(
+          (t) => !t.toLowerCase().startsWith(q) && t.toLowerCase().contains(q),
+        )
+        .toList();
 
     return [...prefixMatches, ...containsMatches].take(limit).toList();
   }
@@ -827,7 +872,10 @@ class EthiopianJobCatalogue {
     // Fuzzy check
     for (final cat in categories) {
       for (final t in cat.titles) {
-        if (lower.contains(t.toLowerCase()) || t.toLowerCase().contains(lower)) return cat;
+        if (lower.contains(t.toLowerCase()) ||
+            t.toLowerCase().contains(lower)) {
+          return cat;
+        }
       }
     }
     return null;

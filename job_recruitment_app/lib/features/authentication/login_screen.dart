@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../services/auth_service.dart';
 import '../../repositories/admin_repository.dart';
 import '../../repositories/advertisement_repository.dart';
@@ -69,8 +70,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (resp.success && widget.authService.currentUser != null) {
         final user = widget.authService.currentUser!;
         if (user.isAdmin) {
-          final adminRepo = Provider.of<AdminRepository>(context, listen: false);
-          final adRepo = Provider.of<AdvertisementRepository>(context, listen: false);
+          final adminRepo = Provider.of<AdminRepository>(
+            context,
+            listen: false,
+          );
+          final adRepo = Provider.of<AdvertisementRepository>(
+            context,
+            listen: false,
+          );
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -170,7 +177,9 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: _showLanguageDialog,
             icon: const Icon(Icons.language, size: 18),
             label: Text(
-              widget.authService.currentLocale.languageCode == 'am' ? 'አማ' : 'EN',
+              widget.authService.currentLocale.languageCode == 'am'
+                  ? 'አማ'
+                  : 'EN',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
@@ -188,7 +197,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: const Color(0xFF0D6B4F).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.work, size: 48, color: Color(0xFF0D6B4F)),
+                child: const Icon(
+                  Icons.work,
+                  size: 48,
+                  color: Color(0xFF0D6B4F),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -213,7 +226,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   color: const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B))),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Color(0xFF991B1B)),
+                ),
               ),
 
             TextField(
@@ -232,8 +248,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 labelText: loc.t('password'),
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ),
@@ -244,7 +263,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ForgotPasswordScreen(apiService: widget.apiService),
+                      builder: (_) =>
+                          ForgotPasswordScreen(apiService: widget.apiService),
                     ),
                   );
                 },
@@ -258,7 +278,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : Text(loc.t('login')),
             ),
@@ -276,7 +299,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text(
                     'Quick Demo Accounts:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF475569)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFF475569),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -285,21 +312,56 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(36),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
                           ),
-                          onPressed: () => _fillDemo('jobseeker@example.com', 'Seeker@123456'),
-                          child: const Text('Job Seeker', style: TextStyle(fontSize: 12)),
+                          onPressed: () => _fillDemo(
+                            'jobseeker@example.com',
+                            'Seeker@123456',
+                          ),
+                          child: const Text(
+                            'Job Seeker',
+                            style: TextStyle(fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(36),
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
                           ),
-                          onPressed: () => _fillDemo('recruitment@example.com', 'Employer@123456'),
-                          child: const Text('Employer', style: TextStyle(fontSize: 12)),
+                          onPressed: () => _fillDemo(
+                            'recruitment@example.com',
+                            'Employer@123456',
+                          ),
+                          child: const Text(
+                            'Employer',
+                            style: TextStyle(fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(36),
+                            padding: const EdgeInsets.symmetric(horizontal: 2),
+                          ),
+                          onPressed: () => _fillDemo(
+                            'admin@jobrecruitment.et',
+                            'Admin@123456',
+                          ),
+                          child: const Text(
+                            'Admin',
+                            style: TextStyle(fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ],

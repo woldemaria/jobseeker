@@ -36,15 +36,22 @@ class ApplicationRepository {
     return null;
   }
 
-  Future<ApiResponse> updateStatus(int applicationId, String status, {String? notes}) async {
-    return await _apiService.patch('${ApiConstants.applications}/$applicationId/status', {
-      'status': status,
-      'notes': notes,
-    });
+  Future<ApiResponse> updateStatus(
+    int applicationId,
+    String status, {
+    String? notes,
+  }) async {
+    return await _apiService.patch(
+      '${ApiConstants.applications}/$applicationId/status',
+      {'status': status, 'notes': notes},
+    );
   }
 
   Future<ApiResponse> withdrawApplication(int applicationId) async {
-    return await _apiService.post('${ApiConstants.applications}/$applicationId/withdraw', {});
+    return await _apiService.post(
+      '${ApiConstants.applications}/$applicationId/withdraw',
+      {},
+    );
   }
 
   Future<ApiResponse> scheduleInterview({
@@ -54,16 +61,22 @@ class ApplicationRepository {
     required String interviewLocation,
     String? interviewNotes,
   }) async {
-    return await _apiService.post('${ApiConstants.applications}/$applicationId/interview', {
-      'interview_at': interviewAt,
-      'interview_type': interviewType,
-      'interview_location': interviewLocation,
-      'interview_notes': interviewNotes,
-    });
+    return await _apiService.post(
+      '${ApiConstants.applications}/$applicationId/interview',
+      {
+        'interview_at': interviewAt,
+        'interview_type': interviewType,
+        'interview_location': interviewLocation,
+        'interview_notes': interviewNotes,
+      },
+    );
   }
 
   Future<ApiResponse> confirmInterview(int applicationId) async {
-    return await _apiService.post('${ApiConstants.applications}/$applicationId/interview/confirm', {});
+    return await _apiService.post(
+      '${ApiConstants.applications}/$applicationId/interview/confirm',
+      {},
+    );
   }
 
   Future<ApiResponse> rescheduleInterview({
@@ -71,9 +84,30 @@ class ApplicationRepository {
     String? interviewAt,
     String? reason,
   }) async {
-    return await _apiService.post('${ApiConstants.applications}/$applicationId/interview/reschedule', {
-      'interview_at': interviewAt,
-      'reason': reason,
-    });
+    return await _apiService.post(
+      '${ApiConstants.applications}/$applicationId/interview/reschedule',
+      {'interview_at': interviewAt, 'reason': reason},
+    );
+  }
+
+  Future<ApiResponse> createJobOffer({
+    required int applicationId,
+    required double salary,
+    required String startDate,
+    String? benefits,
+    String? conditions,
+    String? notes,
+  }) async {
+    return await _apiService.post(
+      '${ApiConstants.applications}/$applicationId/offer',
+      {
+        'offer_salary': salary,
+        'offer_start_date': startDate,
+        if (benefits != null && benefits.isNotEmpty) 'offer_benefits': benefits,
+        if (conditions != null && conditions.isNotEmpty)
+          'offer_conditions': conditions,
+        if (notes != null && notes.isNotEmpty) 'offer_notes': notes,
+      },
+    );
   }
 }

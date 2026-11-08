@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import '../models/document_model.dart';
 import '../models/notification_model.dart';
 import '../models/skill_model.dart';
@@ -24,14 +25,19 @@ class ProfileRepository {
     return await _apiService.put(ApiConstants.profile, data);
   }
 
-  Future<ApiResponse> uploadProfilePhoto(List<int> bytes, String filename) async {
+  Future<ApiResponse> uploadProfilePhoto(
+    List<int> bytes,
+    String filename,
+  ) async {
     return await _apiService.uploadProfilePhotoBytes(bytes, filename);
   }
 
   Future<List<SkillModel>> getAllSkills() async {
     final response = await _apiService.get(ApiConstants.skills);
     if (response.success && response.data is List) {
-      return (response.data as List).map((s) => SkillModel.fromJson(s)).toList();
+      return (response.data as List)
+          .map((s) => SkillModel.fromJson(s))
+          .toList();
     }
     return [];
   }
@@ -39,12 +45,18 @@ class ProfileRepository {
   Future<List<SkillModel>> getUserSkills() async {
     final response = await _apiService.get(ApiConstants.profileSkills);
     if (response.success && response.data is List) {
-      return (response.data as List).map((s) => SkillModel.fromJson(s)).toList();
+      return (response.data as List)
+          .map((s) => SkillModel.fromJson(s))
+          .toList();
     }
     return [];
   }
 
-  Future<ApiResponse> addSkill(int skillId, String proficiency, double years) async {
+  Future<ApiResponse> addSkill(
+    int skillId,
+    String proficiency,
+    double years,
+  ) async {
     return await _apiService.post(ApiConstants.profileSkills, {
       'skill_id': skillId,
       'proficiency_level': proficiency,
@@ -60,12 +72,23 @@ class ProfileRepository {
     return await _apiService.post(ApiConstants.profileEducation, data);
   }
 
+  Future<ApiResponse> updateEducation(int id, Map<String, dynamic> data) async {
+    return await _apiService.put('${ApiConstants.profileEducation}/$id', data);
+  }
+
   Future<ApiResponse> removeEducation(int id) async {
     return await _apiService.delete('${ApiConstants.profileEducation}/$id');
   }
 
   Future<ApiResponse> addExperience(Map<String, dynamic> data) async {
     return await _apiService.post(ApiConstants.profileExperience, data);
+  }
+
+  Future<ApiResponse> updateExperience(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    return await _apiService.put('${ApiConstants.profileExperience}/$id', data);
   }
 
   Future<ApiResponse> removeExperience(int id) async {
@@ -76,7 +99,9 @@ class ProfileRepository {
   Future<List<DocumentModel>> getDocuments() async {
     final response = await _apiService.get(ApiConstants.documents);
     if (response.success && response.data is List) {
-      return (response.data as List).map((d) => DocumentModel.fromJson(d)).toList();
+      return (response.data as List)
+          .map((d) => DocumentModel.fromJson(d))
+          .toList();
     }
     return [];
   }
@@ -85,8 +110,17 @@ class ProfileRepository {
     return await _apiService.uploadFile(ApiConstants.documents, file, docType);
   }
 
-  Future<ApiResponse> uploadDocumentBytes(List<int> bytes, String filename, String docType) async {
-    return await _apiService.uploadFileBytes(ApiConstants.documents, bytes, filename, docType);
+  Future<ApiResponse> uploadDocumentBytes(
+    List<int> bytes,
+    String filename,
+    String docType,
+  ) async {
+    return await _apiService.uploadFileBytes(
+      ApiConstants.documents,
+      bytes,
+      filename,
+      docType,
+    );
   }
 
   Future<ApiResponse> deleteDocument(int docId) async {
@@ -97,18 +131,24 @@ class ProfileRepository {
   Future<List<NotificationModel>> getNotifications() async {
     final response = await _apiService.get(ApiConstants.notifications);
     if (response.success && response.data is List) {
-      return (response.data as List).map((n) => NotificationModel.fromJson(n)).toList();
+      return (response.data as List)
+          .map((n) => NotificationModel.fromJson(n))
+          .toList();
     }
     return [];
   }
 
   Future<bool> markNotificationRead(int id) async {
-    final response = await _apiService.patch('${ApiConstants.notifications}/$id/read');
+    final response = await _apiService.patch(
+      '${ApiConstants.notifications}/$id/read',
+    );
     return response.success;
   }
 
   Future<bool> markAllNotificationsRead() async {
-    final response = await _apiService.patch(ApiConstants.markAllNotificationsRead);
+    final response = await _apiService.patch(
+      ApiConstants.markAllNotificationsRead,
+    );
     return response.success;
   }
 
@@ -128,7 +168,10 @@ class ProfileRepository {
     return [];
   }
 
-  Future<ApiResponse> submitQuiz(int quizId, Map<String, dynamic> answers) async {
+  Future<ApiResponse> submitQuiz(
+    int quizId,
+    Map<String, dynamic> answers,
+  ) async {
     return await _apiService.post('/quizzes/$quizId/submit', {
       'answers': answers,
     });

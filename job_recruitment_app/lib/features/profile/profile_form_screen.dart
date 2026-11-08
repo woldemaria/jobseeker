@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import '../../repositories/profile_repository.dart';
 import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
@@ -98,7 +100,8 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
           _locationController.text = profile['location'] ?? '';
           _educationLevelController.text = profile['education_level'] ?? '';
           _fieldOfStudyController.text = profile['field_of_study'] ?? '';
-          _experienceController.text = (profile['experience_years'] ?? 0).toString();
+          _experienceController.text = (profile['experience_years'] ?? 0)
+              .toString();
           _bioController.text = profile['biography'] ?? '';
           _gender = profile['gender']?.toString().toLowerCase();
 
@@ -113,9 +116,12 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoading = false;
           _generalErrorMessage = 'Failed to load profile details: $e';
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -123,14 +129,14 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
   Future<void> _pickImageFromDisk(BuildContext modalCtx) async {
     setState(() => _isPickingPhoto = true);
     try {
-      final files = await FilePicker.pickFiles(
-        type: FileType.image,
-      );
+      final files = await FilePicker.pickFiles(type: FileType.image);
       if (files.isNotEmpty) {
         final file = files.first;
         final bytes = await file.readAsBytes();
         final ext = file.name.split('.').last.toLowerCase();
-        final mime = (ext == 'png') ? 'image/png' : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
+        final mime = (ext == 'png')
+            ? 'image/png'
+            : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
         final dataUri = 'data:$mime;base64,${base64Encode(bytes)}';
 
         setState(() {
@@ -160,7 +166,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (bottomCtx, setModalState) => Padding(
           padding: EdgeInsets.only(
@@ -178,10 +186,16 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   width: 40,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const Text('Update Profile Avatar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Update Profile Avatar',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 14),
 
               // Upload from Device Disk
@@ -193,15 +207,24 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D6B4F).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF0D6B4F), width: 1.5),
+                    border: Border.all(
+                      color: const Color(0xFF0D6B4F),
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.photo_library_outlined, color: Color(0xFF0D6B4F), size: 22),
+                      const Icon(
+                        Icons.photo_library_outlined,
+                        color: Color(0xFF0D6B4F),
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        _isPickingPhoto ? 'Selecting Image...' : 'Pick Photo from Storage / Disk',
+                        _isPickingPhoto
+                            ? 'Selecting Image...'
+                            : 'Pick Photo from Storage / Disk',
                         style: const TextStyle(
                           color: Color(0xFF0D6B4F),
                           fontWeight: FontWeight.bold,
@@ -215,7 +238,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
               const SizedBox(height: 16),
               const Text(
                 'Or select from curated executive avatars:',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                ),
               ),
               const SizedBox(height: 10),
 
@@ -243,10 +270,14 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF0D6B4F) : Colors.grey.shade300,
+                          color: isSelected
+                              ? const Color(0xFF0D6B4F)
+                              : Colors.grey.shade300,
                           width: isSelected ? 2.5 : 1,
                         ),
-                        color: isSelected ? const Color(0xFF0D6B4F).withOpacity(0.08) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFF0D6B4F).withOpacity(0.08)
+                            : Colors.white,
                       ),
                       padding: const EdgeInsets.all(6),
                       child: Column(
@@ -261,8 +292,12 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                             avatar['name']!,
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF334155),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFF0D6B4F)
+                                  : const Color(0xFF334155),
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
@@ -300,8 +335,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                       setState(() => _profilePhoto = null);
                       Navigator.pop(ctx);
                     },
-                    icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 16),
-                    label: const Text('Remove Photo', style: TextStyle(color: Color(0xFFDC2626))),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFDC2626),
+                      size: 16,
+                    ),
+                    label: const Text(
+                      'Remove Photo',
+                      style: TextStyle(color: Color(0xFFDC2626)),
+                    ),
                   ),
                 ),
             ],
@@ -322,7 +364,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please correct the validation errors in the form before saving.'),
+          content: Text(
+            'Please correct the validation errors in the form before saving.',
+          ),
           backgroundColor: Color(0xFFDC2626),
         ),
       );
@@ -334,13 +378,24 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
     try {
       final payload = <String, dynamic>{
         'name': _nameController.text.trim(),
-        'phone': _phoneController.text.trim().isNotEmpty ? _phoneController.text.trim() : null,
+        'phone': _phoneController.text.trim().isNotEmpty
+            ? _phoneController.text.trim()
+            : null,
         'profile_photo': _profilePhoto,
-        'location': _locationController.text.trim().isNotEmpty ? _locationController.text.trim() : null,
-        'education_level': _educationLevelController.text.trim().isNotEmpty ? _educationLevelController.text.trim() : null,
-        'field_of_study': _fieldOfStudyController.text.trim().isNotEmpty ? _fieldOfStudyController.text.trim() : null,
-        'experience_years': double.tryParse(_experienceController.text.trim()) ?? 0.0,
-        'biography': _bioController.text.trim().isNotEmpty ? _bioController.text.trim() : null,
+        'location': _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
+            : null,
+        'education_level': _educationLevelController.text.trim().isNotEmpty
+            ? _educationLevelController.text.trim()
+            : null,
+        'field_of_study': _fieldOfStudyController.text.trim().isNotEmpty
+            ? _fieldOfStudyController.text.trim()
+            : null,
+        'experience_years':
+            double.tryParse(_experienceController.text.trim()) ?? 0.0,
+        'biography': _bioController.text.trim().isNotEmpty
+            ? _bioController.text.trim()
+            : null,
         'gender': _gender,
       };
 
@@ -377,7 +432,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
 
           setState(() {
             _serverFieldErrors = fieldErrors;
-            _generalErrorMessage = resp.message.isNotEmpty ? resp.message : 'Failed to update profile.';
+            _generalErrorMessage = resp.message.isNotEmpty
+                ? resp.message
+                : 'Failed to update profile.';
           });
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -428,9 +485,22 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
           TextButton.icon(
             onPressed: _isSaving ? null : _submitProfile,
             icon: _isSaving
-                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : const Icon(Icons.check, color: Colors.white, size: 18),
-            label: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Save',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -453,12 +523,19 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
+                          const Icon(
+                            Icons.error_outline,
+                            color: Color(0xFFDC2626),
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _generalErrorMessage!,
-                              style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13),
+                              style: const TextStyle(
+                                color: Color(0xFF991B1B),
+                                fontSize: 13,
+                              ),
                             ),
                           ),
                         ],
@@ -478,17 +555,29 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: const Color(0xFF0D6B4F).withOpacity(0.08),
-                              border: Border.all(color: const Color(0xFF0D6B4F), width: 2.5),
+                              border: Border.all(
+                                color: const Color(0xFF0D6B4F),
+                                width: 2.5,
+                              ),
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: avatarProvider != null
                                 ? Image(
                                     image: avatarProvider,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.person, size: 54, color: Color(0xFF0D6B4F)),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              Icons.person,
+                                              size: 54,
+                                              color: Color(0xFF0D6B4F),
+                                            ),
                                   )
-                                : const Icon(Icons.person, size: 54, color: Color(0xFF0D6B4F)),
+                                : const Icon(
+                                    Icons.person,
+                                    size: 54,
+                                    color: Color(0xFF0D6B4F),
+                                  ),
                           ),
                         ),
                         Positioned(
@@ -501,9 +590,16 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFF0D6B4F),
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                               ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
                         ),
@@ -514,17 +610,30 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   Center(
                     child: TextButton.icon(
                       onPressed: _showPhotoPickerModal,
-                      icon: const Icon(Icons.photo_library_outlined, size: 16, color: Color(0xFF0D6B4F)),
+                      icon: const Icon(
+                        Icons.photo_library_outlined,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       label: Text(
-                        _profilePhoto != null ? 'Change Profile Avatar' : 'Upload Profile Avatar',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF0D6B4F), fontWeight: FontWeight.w600),
+                        _profilePhoto != null
+                            ? 'Change Profile Avatar'
+                            : 'Upload Profile Avatar',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF0D6B4F),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   // Section 1: Basic Information
-                  _buildSectionHeader('Personal Information', Icons.badge_outlined),
+                  _buildSectionHeader(
+                    'Personal Information',
+                    Icons.badge_outlined,
+                  ),
                   const SizedBox(height: 10),
 
                   // Name Field
@@ -607,7 +716,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                                   ? "${_dateOfBirth!.year}-${_dateOfBirth!.month.toString().padLeft(2, '0')}-${_dateOfBirth!.day.toString().padLeft(2, '0')}"
                                   : 'Select Date',
                               style: TextStyle(
-                                color: _dateOfBirth != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                                color: _dateOfBirth != null
+                                    ? const Color(0xFF0F172A)
+                                    : const Color(0xFF94A3B8),
                                 fontSize: 13,
                               ),
                             ),
@@ -626,9 +737,18 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                             errorText: _serverFieldErrors['gender'],
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'male', child: Text('Male')),
-                            DropdownMenuItem(value: 'female', child: Text('Female')),
-                            DropdownMenuItem(value: 'other', child: Text('Other')),
+                            DropdownMenuItem(
+                              value: 'male',
+                              child: Text('Male'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'female',
+                              child: Text('Female'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text('Other'),
+                            ),
                           ],
                           onChanged: (val) => setState(() => _gender = val),
                         ),
@@ -638,7 +758,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   const SizedBox(height: 20),
 
                   // Section 2: Career & Qualifications
-                  _buildSectionHeader('Professional Qualifications', Icons.school_outlined),
+                  _buildSectionHeader(
+                    'Professional Qualifications',
+                    Icons.school_outlined,
+                  ),
                   const SizedBox(height: 10),
 
                   TextFormField(
@@ -671,7 +794,9 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                       hintText: 'e.g. 3.5',
                       errorText: _serverFieldErrors['experience_years'],
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: (val) {
                       if (val != null && val.trim().isNotEmpty) {
                         final num = double.tryParse(val.trim());
@@ -688,7 +813,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                   const SizedBox(height: 20),
 
                   // Section 3: Biography
-                  _buildSectionHeader('Professional Summary', Icons.description_outlined),
+                  _buildSectionHeader(
+                    'Professional Summary',
+                    Icons.description_outlined,
+                  ),
                   const SizedBox(height: 10),
 
                   TextFormField(
@@ -720,10 +848,15 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0D6B4F).withOpacity(0.12),
+                                  color: const Color(0xFF0D6B4F)
+                                      .withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(Icons.folder_shared, color: Color(0xFF0D6B4F), size: 20),
+                                child: const Icon(
+                                  Icons.folder_shared,
+                                  color: Color(0xFF0D6B4F),
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               const Expanded(
@@ -732,11 +865,17 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                                   children: [
                                     Text(
                                       'Curriculum Vitae (CV) & Documents',
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                     Text(
                                       'Attach your verified CV from disk so employers can review your profile.',
-                                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(0xFF64748B),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -751,12 +890,21 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => CvManagementScreen(profRepo: widget.profRepo),
+                                    builder: (_) => CvManagementScreen(
+                                      profRepo: widget.profRepo,
+                                    ),
                                   ),
                                 );
                               },
-                              icon: const Icon(Icons.upload_file, color: Color(0xFF0D6B4F), size: 18),
-                              label: const Text('Manage & Upload CV from Disk', style: TextStyle(color: Color(0xFF0D6B4F))),
+                              icon: const Icon(
+                                Icons.upload_file,
+                                color: Color(0xFF0D6B4F),
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Manage & Upload CV from Disk',
+                                style: TextStyle(color: Color(0xFF0D6B4F)),
+                              ),
                             ),
                           ),
                         ],
@@ -772,7 +920,10 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
                         : Text(loc.t('save')),
                   ),
@@ -789,7 +940,11 @@ class _ProfileFormScreenState extends State<ProfileFormScreen> {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+          ),
         ),
       ],
     );

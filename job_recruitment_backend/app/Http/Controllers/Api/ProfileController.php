@@ -173,6 +173,25 @@ class ProfileController extends BaseApiController
         return $this->successResponse(null, 'Education record removed.');
     }
 
+    public function updateEducation(Request $request, int $id): JsonResponse
+    {
+        $profile = $this->getOrCreateProfile($request->user());
+        $record = $profile->educationRecords()->findOrFail($id);
+
+        $validated = $request->validate([
+            'institution_name' => 'required|string|max:200',
+            'qualification' => 'required|string|max:150',
+            'field_of_study' => 'nullable|string|max:150',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'grade' => 'nullable|string|max:50',
+            'description' => 'nullable|string',
+        ]);
+
+        $record->update($validated);
+        return $this->successResponse($record, 'Education record updated successfully.');
+    }
+
     // Work Experience
     public function getExperience(Request $request): JsonResponse
     {
@@ -196,6 +215,25 @@ class ProfileController extends BaseApiController
 
         $record = $profile->workExperiences()->create($validated);
         return $this->successResponse($record, 'Work experience added.', 201);
+    }
+
+    public function updateExperience(Request $request, int $id): JsonResponse
+    {
+        $profile = $this->getOrCreateProfile($request->user());
+        $record = $profile->workExperiences()->findOrFail($id);
+
+        $validated = $request->validate([
+            'company_name' => 'required|string|max:200',
+            'job_title' => 'required|string|max:150',
+            'employment_type' => 'nullable|string|max:50',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'is_current' => 'nullable|boolean',
+            'description' => 'nullable|string',
+        ]);
+
+        $record->update($validated);
+        return $this->successResponse($record, 'Work experience record updated successfully.');
     }
 
     public function removeExperience(Request $request, int $id): JsonResponse

@@ -325,4 +325,106 @@ class RecruitmentApiTest extends TestCase
                      ]
                  ]);
     }
+
+    /** TC-015: Job seeker can create, update, and delete education records */
+    public function test_job_seeker_can_manage_education_lifecycle(): void
+    {
+        $candidateUser = User::where('email', 'jobseeker@example.com')->first();
+
+        // 1. Create education
+        $createResp = $this->actingAs($candidateUser, 'sanctum')->postJson('/api/v1/profile/education', [
+            'institution_name' => 'Addis Ababa University',
+            'qualification' => 'B.Sc. in Computer Science',
+            'field_of_study' => 'Software Engineering',
+            'start_date' => '2019-09-01',
+            'end_date' => '2023-07-01',
+            'grade' => '3.85',
+            'description' => 'Graduated with Great Distinction.',
+        ]);
+        $createResp->assertStatus(201)
+                   ->assertJson(['success' => true]);
+        $eduId = $createResp->json('data.id');
+
+        $this->assertDatabaseHas('education_records', [
+            'id' => $eduId,
+            'institution_name' => 'Addis Ababa University',
+            'qualification' => 'B.Sc. in Computer Science',
+        ]);
+
+        // 2. Update education
+        $updateResp = $this->actingAs($candidateUser, 'sanctum')->putJson("/api/v1/profile/education/{$eduId}", [
+            'institution_name' => 'Addis Ababa University (AAU)',
+            'qualification' => 'M.Sc. in Computer Science',
+            'field_of_study' => 'Artificial Intelligence',
+            'start_date' => '2023-10-01',
+            'grade' => '3.95',
+        ]);
+        $updateResp->assertStatus(200)
+                   ->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('education_records', [
+            'id' => $eduId,
+            'institution_name' => 'Addis Ababa University (AAU)',
+            'qualification' => 'M.Sc. in Computer Science',
+        ]);
+
+        // 3. Delete education
+        $deleteResp = $this->actingAs($candidateUser, 'sanctum')->deleteJson("/api/v1/profile/education/{$eduId}");
+        $deleteResp->assertStatus(200)
+                   ->assertJson(['success' => true]);
+
+        $this->assertDatabaseMissing('education_records', ['id' => $eduId]);
+    }
+
+    /** TC-016: Job seeker can create, update, and delete work experience records */
+    public function test_job_seeker_can_manage_experience_lifecycle(): void
+    {
+        $candidateUser = User::where('email', 'jobseeker@example.com')->first();
+
+        // 1. Create experience
+        $createResp = $this->actingAs($candidateUser, 'sanctum')->postJson('/api/v1/profile/experience', [
+            'company_name' => 'Ethio Telecom',
+            'job_title' => 'Junior Developer',
+            'employment_type' => 'Full-time',
+            'start_date' => '2023-08-01',
+            'end_date' => '2024-05-01',
+            'is_current' => false,
+            'description' => 'Backend development with PHP and Laravel.',
+        ]);
+        $createResp->assertStatus(201)
+                   ->assertJson(['success' => true]);
+        $expId = $createResp->json('data.id');
+
+        $this->assertDatabaseHas('work_experiences', [
+            'id' => $expId,
+            'company_name' => 'Ethio Telecom',
+            'job_title' => 'Junior Developer',
+        ]);
+
+        // 2. Update experience
+        $updateResp = $this->actingAs($candidateUser, 'sanctum')->putJson("/api/v1/profile/experience/{$expId}", [
+            'company_name' => 'Ethio Telecom HQ',
+            'job_title' => 'Mid-Level Full Stack Developer',
+            'employment_type' => 'Full-time',
+            'start_date' => '2023-08-01',
+            'is_current' => true,
+            'description' => 'Promoted to lead backend developer.',
+        ]);
+        $updateResp->assertStatus(200)
+                   ->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('work_experiences', [
+            'id' => $expId,
+            'company_name' => 'Ethio Telecom HQ',
+            'job_title' => 'Mid-Level Full Stack Developer',
+            'is_current' => 1,
+        ]);
+
+        // 3. Delete experience
+        $deleteResp = $this->actingAs($candidateUser, 'sanctum')->deleteJson("/api/v1/profile/experience/{$expId}");
+        $deleteResp->assertStatus(200)
+                   ->assertJson(['success' => true]);
+
+        $this->assertDatabaseMissing('work_experiences', ['id' => $expId]);
+    }
 }

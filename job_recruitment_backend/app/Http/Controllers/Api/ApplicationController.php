@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Application;
+use App\Models\ApplicationStatusHistory;
+use App\Models\AuditLog;
 use App\Models\Job;
+use App\Models\Notification;
 use App\Services\ApplicationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -253,5 +256,174 @@ class ApplicationController extends BaseApiController
         $updated = $this->applicationService->rescheduleInterview($application, $validated, $user);
 
         return $this->successResponse($updated, 'Interview reschedule recorded.');
+    }
+
+    /**
+     * Issue a formal job offer to candidate (Section 11 - Employer).
+     */
+    public function createOffer(Request $request, int $id): JsonResponse
+    {
+        $application = Application::with(['profile.user', 'job.employer'])->findOrFail($id);
+        $user = $request->user();
+
+        $isEmployer = $user->employers->contains('id', $application->job->employer_id);
+        if (!$isEmployer && !$user->isAdmin()) {
+            return $this->errorResponse('Unauthorized. Only the job employer can issue a formal offer.', 403);
+        }
+
+        $validated = $request->validate([
+            'offer_salary' => 'required|numeric|min:0',
+            'offer_benefits' => 'nullable|string',
+            'offer_conditions' => 'nullable|string',
+            'offer_start_date' => 'required|date',
+            'offer_notes' => 'nullable|string',
+        ]);
+
+        $oldStatus = $application->status;
+        $application->update([
+            'offer_salary' => $validated['offer_salary'],
+            'offer_benefits' => $validated['offer_benefits'] ?? null,
+            'offer_conditions' => $validated['offer_conditions'] ?? null,
+            'offer_start_date' => $validated['offer_start_date'],
+            'offer_notes' => $validated['offer_notes'] ?? null,
+            'offer_status' => 'offered',
+            'offered_at' => now(),
+            'status' => 'offered',
+        ]);
+
+        ApplicationStatusHistory::create([
+            'application_id' => $application->id,
+            'changed_by' => $user->id,
+            'old_status' => $oldStatus,
+            'new_status' => 'offered',
+            'notes' => 'Formal employment offer issued to candidate.',
+        ]);
+
+        // Notify candidate
+        if ($application->profile && $application->profile->user_id) {
+            Notification::create([
+                'user_id' => $application->profile->user_id,
+                'title' => 'Formal Job Offer Received! 🎉',
+                'message' => "Congratulations! {$application->job->employer->organization_name} has extended an official employment offer for {$application->job->title}.",
+                'notification_type' => 'job_offer',
+                'is_read' => false,
+            ]);
+        }
+
+        AuditLog::create([
+            'user_id' => $user->id,
+            'action' => 'job_offer_issued',
+            'entity_type' => 'Application',
+            'entity_id' => $application->id,
+            'description' => "Job offer issued for application #{$application->id} ({$application->job->title}).",
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+        ]);
+
+        return $this->successResponse($application->fresh(['job.employer', 'profile.user']), 'Job offer issued successfully.');
+    }
+
+    /**
+     * View formal job offer details (Section 11).
+     */
+    public function offerDetails(Request $request, int $id): JsonResponse
+    {
+        $application = Application::with(['job.employer', 'profile.user'])->findOrFail($id);
+        $user = $request->user();
+
+        $isApplicant = $application->profile->user_id === $user->id;
+        $isEmployer = $user->employers->contains('id', $application->job->employer_id);
+        if (!$isApplicant && !$isEmployer && !$user->isAdmin()) {
+            return $this->errorResponse('Unauthorized to view this offer.', 403);
+        }
+
+        return $this->successResponse([
+            'application_id' => $application->id,
+            'job_id' => $application->job->id,
+            'job_title' => $application->job->title,
+            'company_name' => $application->job->employer?->organization_name,
+            'candidate_name' => $application->profile?->user?->name,
+            'offer_salary' => $application->offer_salary,
+            'offer_benefits' => $application->offer_benefits,
+            'offer_conditions' => $application->offer_conditions,
+            'offer_start_date' => $application->offer_start_date?->format('Y-m-d'),
+            'offer_status' => $application->offer_status,
+            'offer_notes' => $application->offer_notes,
+            'candidate_response_notes' => $application->candidate_response_notes,
+            'offered_at' => $application->offered_at,
+            'offer_responded_at' => $application->offer_responded_at,
+        ], 'Job offer details retrieved.');
+    }
+
+    /**
+     * Respond to a formal job offer (Candidate: accept, decline, request clarification).
+     */
+    public function respondOffer(Request $request, int $id): JsonResponse
+    {
+        $application = Application::with(['job.employer.members.user', 'profile.user'])->findOrFail($id);
+        $user = $request->user();
+
+        if ($application->profile->user_id !== $user->id && !$user->isAdmin()) {
+            return $this->errorResponse('Unauthorized. Only the applicant can respond to the job offer.', 403);
+        }
+
+        if ($application->offer_status === 'none') {
+            return $this->errorResponse('No active job offer exists for this application.', 400);
+        }
+
+        if (in_array($application->offer_status, ['accepted', 'declined'])) {
+            return $this->errorResponse("This job offer has already been {$application->offer_status}.", 422);
+        }
+
+        if ($application->offer_start_date && now()->startOfDay()->gt($application->offer_start_date->startOfDay())) {
+            return $this->errorResponse('This job offer has expired past its proposed start date.', 422);
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|string|in:accepted,declined,clarification_requested',
+            'notes' => 'nullable|string',
+        ]);
+
+        $action = $validated['action'];
+        $notes = $validated['notes'] ?? null;
+        $oldStatus = $application->status;
+
+        $newAppStatus = match ($action) {
+            'accepted' => 'accepted',
+            'declined' => 'rejected',
+            default => 'offered',
+        };
+
+        $application->update([
+            'offer_status' => $action,
+            'candidate_response_notes' => $notes,
+            'offer_responded_at' => now(),
+            'status' => $newAppStatus,
+        ]);
+
+        ApplicationStatusHistory::create([
+            'application_id' => $application->id,
+            'changed_by' => $user->id,
+            'old_status' => $oldStatus,
+            'new_status' => $newAppStatus,
+            'notes' => "Candidate responded to offer: {$action}. Notes: {$notes}",
+        ]);
+
+        // Notify employer members
+        if ($application->job->employer && $application->job->employer->members->isNotEmpty()) {
+            foreach ($application->job->employer->members as $member) {
+                if ($member->user) {
+                    Notification::create([
+                        'user_id' => $member->user->id,
+                        'title' => "Job Offer Update: {$application->job->title}",
+                        'message' => "Candidate {$user->name} has {$action} the formal job offer." . ($notes ? " Notes: {$notes}" : ''),
+                        'notification_type' => 'offer_response',
+                        'is_read' => false,
+                    ]);
+                }
+            }
+        }
+
+        return $this->successResponse($application->fresh(), "Offer response '{$action}' recorded successfully.");
     }
 }

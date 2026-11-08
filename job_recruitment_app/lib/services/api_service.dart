@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
+
 import '../core/constants/api_constants.dart';
 import 'storage_service.dart';
 
@@ -26,7 +28,8 @@ class _CacheEntry {
   final ApiResponse response;
   final DateTime expiresAt;
 
-  _CacheEntry(this.response, Duration ttl) : expiresAt = DateTime.now().add(ttl);
+  _CacheEntry(this.response, Duration ttl)
+    : expiresAt = DateTime.now().add(ttl);
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
@@ -73,6 +76,7 @@ class ApiService {
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-Consent-ID': _storageService.getConsentUuid(),
     };
     final token = _storageService.getToken();
     if (token != null && token.isNotEmpty) {
@@ -113,7 +117,8 @@ class ApiService {
       final apiResponse = _processResponse(response);
 
       if (apiResponse.success) {
-        final ttl = cacheTtl ??
+        final ttl =
+            cacheTtl ??
             (endpoint.contains('/categories') ||
                     endpoint.contains('/job-titles') ||
                     endpoint.contains('/salary-benchmarks')
@@ -138,11 +143,18 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> post(String endpoint, [Map<String, dynamic>? body]) async {
+  Future<ApiResponse> post(
+    String endpoint, [
+    Map<String, dynamic>? body,
+  ]) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final response = await http
-          .post(uri, headers: _buildHeaders(), body: body != null ? jsonEncode(body) : null)
+          .post(
+            uri,
+            headers: _buildHeaders(),
+            body: body != null ? jsonEncode(body) : null,
+          )
           .timeout(const Duration(seconds: 15));
 
       final res = _processResponse(response);
@@ -163,7 +175,11 @@ class ApiService {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final response = await http
-          .put(uri, headers: _buildHeaders(), body: body != null ? jsonEncode(body) : null)
+          .put(
+            uri,
+            headers: _buildHeaders(),
+            body: body != null ? jsonEncode(body) : null,
+          )
           .timeout(const Duration(seconds: 15));
 
       final res = _processResponse(response);
@@ -180,7 +196,10 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> patch(String endpoint, [Map<String, dynamic>? body]) async {
+  Future<ApiResponse> patch(
+    String endpoint, [
+    Map<String, dynamic>? body,
+  ]) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final response = await http
@@ -226,7 +245,11 @@ class ApiService {
     }
   }
 
-  Future<ApiResponse> uploadFile(String endpoint, File file, String documentType) async {
+  Future<ApiResponse> uploadFile(
+    String endpoint,
+    File file,
+    String documentType,
+  ) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
       final request = http.MultipartRequest('POST', uri);
@@ -240,7 +263,9 @@ class ApiService {
       request.fields['document_type'] = documentType;
       request.files.add(await http.MultipartFile.fromPath('file', file.path));
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       return _processResponse(response);
@@ -269,16 +294,26 @@ class ApiService {
 
       if (photoBytes != null && photoFilename != null) {
         request.files.add(
-          http.MultipartFile.fromBytes('profile_photo_file', photoBytes, filename: photoFilename),
+          http.MultipartFile.fromBytes(
+            'profile_photo_file',
+            photoBytes,
+            filename: photoFilename,
+          ),
         );
       }
       if (cvBytes != null && cvFilename != null) {
         request.files.add(
-          http.MultipartFile.fromBytes('cv_file', cvBytes, filename: cvFilename),
+          http.MultipartFile.fromBytes(
+            'cv_file',
+            cvBytes,
+            filename: cvFilename,
+          ),
         );
       }
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 35));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 35),
+      );
       final response = await http.Response.fromStream(streamedResponse);
       return _processResponse(response);
     } catch (e) {
@@ -307,9 +342,13 @@ class ApiService {
       request.headers['Accept'] = 'application/json';
 
       request.fields['document_type'] = documentType;
-      request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       return _processResponse(response);
@@ -327,7 +366,9 @@ class ApiService {
     String filename,
   ) async {
     try {
-      final uri = Uri.parse('${ApiConstants.baseUrl}${ApiConstants.profilePhoto}');
+      final uri = Uri.parse(
+        '${ApiConstants.baseUrl}${ApiConstants.profilePhoto}',
+      );
       final request = http.MultipartRequest('POST', uri);
 
       final token = _storageService.getToken();
@@ -336,9 +377,13 @@ class ApiService {
       }
       request.headers['Accept'] = 'application/json';
 
-      request.files.add(http.MultipartFile.fromBytes('photo', bytes, filename: filename));
+      request.files.add(
+        http.MultipartFile.fromBytes('photo', bytes, filename: filename),
+      );
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       return _processResponse(response);
@@ -355,7 +400,9 @@ class ApiService {
     try {
       final body = jsonDecode(response.body);
       if (body is Map<String, dynamic>) {
-        final success = body['success'] ?? (response.statusCode >= 200 && response.statusCode < 300);
+        final success =
+            body['success'] ??
+            (response.statusCode >= 200 && response.statusCode < 300);
         final message = body['message'] ?? (success ? 'Success' : 'Error');
         final data = body['data'];
         final meta = body['meta'];

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../repositories/admin_repository.dart';
 import '../../repositories/advertisement_repository.dart';
 import '../../repositories/application_repository.dart';
@@ -9,6 +10,7 @@ import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
 import '../authentication/login_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_fraud_screen.dart';
 import 'admin_users_screen.dart';
 import 'admin_verifications_screen.dart';
 import 'advertisement_management_screen.dart';
@@ -65,11 +67,19 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Logout Admin'),
-        content: const Text('Are you sure you want to log out from administrator session?'),
+        content: const Text(
+          'Are you sure you want to log out from administrator session?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Logout'),
           ),
@@ -81,7 +91,10 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       await widget.authService.logout();
       if (mounted) {
         final jobRepo = Provider.of<JobRepository>(context, listen: false);
-        final appRepo = Provider.of<ApplicationRepository>(context, listen: false);
+        final appRepo = Provider.of<ApplicationRepository>(
+          context,
+          listen: false,
+        );
         final profRepo = Provider.of<ProfileRepository>(context, listen: false);
         final apiService = Provider.of<ApiService>(context, listen: false);
 
@@ -114,6 +127,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     final publishedJobs = _stats?['published_jobs'] ?? 0;
     final totalApplications = _stats?['total_applications'] ?? 0;
     final pendingReports = _stats?['pending_reports'] ?? 0;
+    final flaggedJobs = _stats?['flagged_jobs'] ?? 0;
 
     return RefreshIndicator(
       onRefresh: () => _loadStats(isRefresh: true),
@@ -136,7 +150,11 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                 const CircleAvatar(
                   radius: 28,
                   backgroundColor: Color(0xFF0D6B4F),
-                  child: Icon(Icons.admin_panel_settings, size: 32, color: Colors.white),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    size: 32,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -145,12 +163,19 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                     children: [
                       const Text(
                         'Administrator Portal',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'System Operations, Moderation & Advertising Control',
-                        style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -169,33 +194,137 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           // KPI Grid
           Row(
             children: [
-              Expanded(child: _kpiCard('Total Users', '$totalUsers', Icons.people_outline, Colors.blue, onTap: () => setState(() => _currentIndex = 1))),
+              Expanded(
+                child: _kpiCard(
+                  'Total Users',
+                  '$totalUsers',
+                  Icons.people_outline,
+                  Colors.blue,
+                  onTap: () => setState(() => _currentIndex = 1),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _kpiCard('Job Seekers', '$activeJobSeekers', Icons.person_search, Colors.teal, onTap: () => setState(() => _currentIndex = 1))),
+              Expanded(
+                child: _kpiCard(
+                  'Job Seekers',
+                  '$activeJobSeekers',
+                  Icons.person_search,
+                  Colors.teal,
+                  onTap: () => setState(() => _currentIndex = 1),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _kpiCard('Employers', '$totalEmployers', Icons.business_outlined, Colors.indigo, onTap: () => setState(() => _currentIndex = 2))),
+              Expanded(
+                child: _kpiCard(
+                  'Employers',
+                  '$totalEmployers',
+                  Icons.business_outlined,
+                  Colors.indigo,
+                  onTap: () => setState(() => _currentIndex = 2),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _kpiCard('Pending Verifications', '$pendingVerifications', Icons.verified_user_outlined, Colors.amber.shade900, onTap: () => setState(() => _currentIndex = 2))),
+              Expanded(
+                child: _kpiCard(
+                  'Pending Verifications',
+                  '$pendingVerifications',
+                  Icons.verified_user_outlined,
+                  Colors.amber.shade900,
+                  onTap: () => setState(() => _currentIndex = 2),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _kpiCard('Total Vacancies', '$totalJobs', Icons.work_outline, Colors.purple, onTap: () => setState(() => _currentIndex = 3))),
+              Expanded(
+                child: _kpiCard(
+                  'Total Vacancies',
+                  '$totalJobs',
+                  Icons.work_outline,
+                  Colors.purple,
+                  onTap: () => setState(() => _currentIndex = 3),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _kpiCard('Published Live', '$publishedJobs', Icons.check_circle_outline, Colors.green, onTap: () => setState(() => _currentIndex = 3))),
+              Expanded(
+                child: _kpiCard(
+                  'Published Live',
+                  '$publishedJobs',
+                  Icons.check_circle_outline,
+                  Colors.green,
+                  onTap: () => setState(() => _currentIndex = 3),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _kpiCard('Total Applications', '$totalApplications', Icons.assignment_outlined, Colors.cyan.shade700, onTap: () => setState(() => _currentIndex = 4))),
+              Expanded(
+                child: _kpiCard(
+                  'Total Applications',
+                  '$totalApplications',
+                  Icons.assignment_outlined,
+                  Colors.cyan.shade700,
+                  onTap: () => setState(() => _currentIndex = 4),
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _kpiCard('Pending Reports', '$pendingReports', Icons.report_problem_outlined, Colors.red, onTap: () => setState(() => _currentIndex = 4))),
+              Expanded(
+                child: _kpiCard(
+                  'Pending Reports',
+                  '$pendingReports',
+                  Icons.report_problem_outlined,
+                  Colors.red,
+                  onTap: () => setState(() => _currentIndex = 4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _kpiCard(
+                  'Flagged Vacancies',
+                  '$flaggedJobs',
+                  Icons.shield_outlined,
+                  Colors.deepOrange,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AdminFraudScreen(adminRepo: widget.adminRepo),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _kpiCard(
+                  'Scam Radar',
+                  'Active',
+                  Icons.radar,
+                  Colors.teal,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AdminFraudScreen(adminRepo: widget.adminRepo),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -208,12 +337,44 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           const SizedBox(height: 12),
           ListTile(
             tileColor: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFFEE2E2),
+              child: Icon(Icons.security, color: Colors.red),
+            ),
+            title: const Text(
+              'Fraudulent Job Ads Moderation',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Review scam warnings, fee extortion, and takedowns',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdminFraudScreen(adminRepo: widget.adminRepo),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             leading: const CircleAvatar(
               backgroundColor: Color(0xFFE0F2FE),
               child: Icon(Icons.people, color: Colors.blue),
             ),
-            title: const Text('Manage User Accounts', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              'Manage User Accounts',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: const Text('View roles, activate, or suspend accounts'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => setState(() => _currentIndex = 1),
@@ -221,44 +382,65 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
           const SizedBox(height: 8),
           ListTile(
             tileColor: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             leading: const CircleAvatar(
               backgroundColor: Color(0xFFFEF3C7),
               child: Icon(Icons.verified, color: Colors.amber),
             ),
-            title: const Text('Review Employer Verifications', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Verify business licenses and TIN registration'),
+            title: const Text(
+              'Review Employer Verifications',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Verify business licenses and TIN registration',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => setState(() => _currentIndex = 2),
           ),
           const SizedBox(height: 8),
           ListTile(
             tileColor: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             leading: const CircleAvatar(
               backgroundColor: Color(0xFFDCFCE7),
               child: Icon(Icons.campaign, color: Colors.green),
             ),
-            title: const Text('Advertisement Campaigns & Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Manage banners, schedule dates, and monitor CTR'),
+            title: const Text(
+              'Advertisement Campaigns & Analytics',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Manage banners, schedule dates, and monitor CTR',
+            ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => setState(() => _currentIndex = 3),
           ),
           const SizedBox(height: 8),
           ListTile(
             tileColor: Theme.of(context).cardColor,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             leading: const CircleAvatar(
               backgroundColor: Color(0xFFFEE2E2),
               child: Icon(Icons.analytics, color: Colors.red),
             ),
-            title: const Text('View Detailed Advertising Analytics', style: TextStyle(fontWeight: FontWeight.bold)),
+            title: const Text(
+              'View Detailed Advertising Analytics',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             subtitle: const Text('CTR breakdown by category and placement'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdvertisementAnalyticsScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AdvertisementAnalyticsScreen(),
+                ),
               );
             },
           ),
@@ -267,7 +449,13 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     );
   }
 
-  Widget _kpiCard(String label, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+  Widget _kpiCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     final card = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -287,8 +475,17 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                ),
               ],
             ),
           ),
@@ -323,6 +520,18 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         title: const Text('Admin Console'),
         actions: [
           IconButton(
+            tooltip: 'Fraud Moderation',
+            icon: const Icon(Icons.shield_outlined, color: Colors.amber),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdminFraudScreen(adminRepo: widget.adminRepo),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout, color: Colors.red),
             onPressed: _logout,
@@ -334,11 +543,31 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (idx) => setState(() => _currentIndex = idx),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
-          NavigationDestination(icon: Icon(Icons.verified_outlined), selectedIcon: Icon(Icons.verified), label: 'Verify'),
-          NavigationDestination(icon: Icon(Icons.campaign_outlined), selectedIcon: Icon(Icons.campaign), label: 'Ads'),
-          NavigationDestination(icon: Icon(Icons.shield_outlined), selectedIcon: Icon(Icons.shield), label: 'Reports'),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people),
+            label: 'Users',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.verified_outlined),
+            selectedIcon: Icon(Icons.verified),
+            label: 'Verify',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.campaign_outlined),
+            selectedIcon: Icon(Icons.campaign),
+            label: 'Ads',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shield_outlined),
+            selectedIcon: Icon(Icons.shield),
+            label: 'Reports',
+          ),
         ],
       ),
     );

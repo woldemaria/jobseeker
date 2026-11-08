@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../repositories/admin_repository.dart';
 import '../../shared/utils/avatar_helper.dart';
@@ -33,12 +34,18 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
 
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
-    final users = await widget.adminRepo.getUsers();
-    if (mounted) {
-      setState(() {
-        _users = users;
-        _isLoading = false;
-      });
+    try {
+      final users = await widget.adminRepo.getUsers();
+      if (mounted) {
+        setState(() {
+          _users = users;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -49,17 +56,28 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       final email = (u['email'] ?? '').toString().toLowerCase();
       final status = (u['status'] ?? '').toString().toLowerCase();
 
-      final roles = (u['roles'] as List?)?.map((r) => r is Map ? r['name'] : r.toString()).toList() ?? [];
+      final roles =
+          (u['roles'] as List?)
+              ?.map((r) => r is Map ? r['name'] : r.toString())
+              .toList() ??
+          [];
 
-      final matchesQuery = query.isEmpty || name.contains(query) || email.contains(query);
-      final matchesRole = _selectedRole == 'all' || roles.contains(_selectedRole);
-      final matchesStatus = _selectedStatus == 'all' || status == _selectedStatus;
+      final matchesQuery =
+          query.isEmpty || name.contains(query) || email.contains(query);
+      final matchesRole =
+          _selectedRole == 'all' || roles.contains(_selectedRole);
+      final matchesStatus =
+          _selectedStatus == 'all' || status == _selectedStatus;
 
       return matchesQuery && matchesRole && matchesStatus;
     }).toList();
   }
 
-  Future<void> _updateStatus(int userId, String userName, String currentStatus) async {
+  Future<void> _updateStatus(
+    int userId,
+    String userName,
+    String currentStatus,
+  ) async {
     final newStatus = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -100,7 +118,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
 
     if (newStatus != null && newStatus != currentStatus) {
-      final success = await widget.adminRepo.updateUserStatus(userId, newStatus);
+      final success = await widget.adminRepo.updateUserStatus(
+        userId,
+        newStatus,
+      );
       if (mounted) {
         if (success) {
           _loadUsers();
@@ -146,8 +167,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -158,7 +184,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
-              children: ['all', 'job_seeker', 'employer', 'administrator'].map((role) {
+              children: ['all', 'job_seeker', 'employer', 'administrator'].map((
+                role,
+              ) {
                 final isSelected = _selectedRole == role;
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
@@ -202,79 +230,114 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : list.isEmpty
-                    ? const Center(child: Text('No users match criteria.'))
-                    : RefreshIndicator(
-                        onRefresh: _loadUsers,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: list.length,
-                          itemBuilder: (context, index) {
-                            final user = list[index];
-                            final id = user['id'] as int;
-                            final name = user['name'] ?? 'User';
-                            final email = user['email'] ?? '';
-                            final status = user['status'] ?? 'active';
-                            final photo = user['profile_photo'];
-                            final roles = (user['roles'] as List?)
-                                    ?.map((r) => r is Map ? r['name'] : r.toString())
-                                    .join(', ') ??
-                                'job_seeker';
+                ? const Center(child: Text('No users match criteria.'))
+                : RefreshIndicator(
+                    onRefresh: _loadUsers,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(12),
+                      itemCount: list.length,
+                      itemBuilder: (context, index) {
+                        final user = list[index];
+                        final id = user['id'] as int;
+                        final name = user['name'] ?? 'User';
+                        final email = user['email'] ?? '';
+                        final status = user['status'] ?? 'active';
+                        final photo = user['profile_photo'];
+                        final roles =
+                            (user['roles'] as List?)
+                                ?.map(
+                                  (r) => r is Map ? r['name'] : r.toString(),
+                                )
+                                .join(', ') ??
+                            'job_seeker';
 
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              child: ListTile(
-                                leading: Builder(
-                                  builder: (context) {
-                                    final avatarProvider = getAvatarImageProvider(photo);
-                                    return CircleAvatar(
-                                      backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
-                                      backgroundImage: avatarProvider,
-                                      child: avatarProvider == null
-                                          ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'U')
-                                          : null,
-                                    );
-                                  },
-                                ),
-                                title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(email, style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
-                                    Text('Roles: $roles', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-                                  ],
-                                ),
-                                trailing: InkWell(
-                                  onTap: () => _updateStatus(id, name, status),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(status).withOpacity(0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: _getStatusColor(status)),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          status.toUpperCase(),
-                                          style: TextStyle(
-                                            color: _getStatusColor(status),
-                                            fontSize: 10.5,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(Icons.arrow_drop_down, size: 16),
-                                      ],
-                                    ),
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: ListTile(
+                            leading: Builder(
+                              builder: (context) {
+                                final avatarProvider = getAvatarImageProvider(
+                                  photo,
+                                );
+                                return CircleAvatar(
+                                  backgroundColor: AppTheme.primaryColor
+                                      .withOpacity(0.12),
+                                  backgroundImage: avatarProvider,
+                                  child: avatarProvider == null
+                                      ? Text(
+                                          name.isNotEmpty
+                                              ? name[0].toUpperCase()
+                                              : 'U',
+                                        )
+                                      : null,
+                                );
+                              },
+                            ),
+                            title: Text(
+                              name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  email,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 12,
                                   ),
                                 ),
+                                Text(
+                                  'Roles: $roles',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: InkWell(
+                              onTap: () => _updateStatus(id, name, status),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(status)
+                                      .withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _getStatusColor(status),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      status.toUpperCase(),
+                                      style: TextStyle(
+                                        color: _getStatusColor(status),
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.arrow_drop_down, size: 16),
+                                  ],
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

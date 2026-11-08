@@ -21,19 +21,91 @@ class UserModel {
     this.employers,
   });
 
-  bool get isJobSeeker => roles.contains('job_seeker');
-  bool get isEmployer => roles.contains('employer');
-  bool get isAdmin => roles.contains('administrator');
+  bool get isJobSeeker =>
+      roles.any(
+        (r) => [
+          'job_seeker',
+          'jobseeker',
+          'seeker',
+          'candidate',
+          'user',
+        ].contains(r.toLowerCase()),
+      ) ||
+      (!isAdmin && !isEmployer);
+
+  bool get isEmployer =>
+      roles.any(
+        (r) => [
+          'employer',
+          'company',
+          'recruiter',
+          'organization',
+          'employee',
+        ].contains(r.toLowerCase()),
+      ) ||
+      (employers != null && employers!.isNotEmpty);
+
+  bool get isAdmin => roles.any(
+    (r) => [
+      'administrator',
+      'admin',
+      'super_admin',
+      'superadmin',
+      'manager',
+      'moderator',
+      'staff',
+    ].contains(r.toLowerCase()),
+  );
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     List<String> roleList = [];
     if (json['roles'] != null && json['roles'] is List) {
       for (var r in json['roles']) {
         if (r is Map && r['name'] != null) {
-          roleList.add(r['name'].toString());
+          final name = r['name'].toString().toLowerCase().trim();
+          if (name.isNotEmpty && !roleList.contains(name)) {
+            roleList.add(name);
+          }
         } else if (r is String) {
-          roleList.add(r);
+          final name = r.toLowerCase().trim();
+          if (name.isNotEmpty && !roleList.contains(name)) {
+            roleList.add(name);
+          }
         }
+      }
+    }
+
+    if (json['role'] != null) {
+      if (json['role'] is String) {
+        final roleStr = json['role'].toString().toLowerCase().trim();
+        if (roleStr.isNotEmpty && !roleList.contains(roleStr)) {
+          roleList.add(roleStr);
+        }
+      } else if (json['role'] is Map && json['role']['name'] != null) {
+        final roleStr = json['role']['name'].toString().toLowerCase().trim();
+        if (roleStr.isNotEmpty && !roleList.contains(roleStr)) {
+          roleList.add(roleStr);
+        }
+      }
+    }
+
+    if (json['user_type'] != null && json['user_type'] is String) {
+      final roleStr = json['user_type'].toString().toLowerCase().trim();
+      if (roleStr.isNotEmpty && !roleList.contains(roleStr)) {
+        roleList.add(roleStr);
+      }
+    }
+
+    if (roleList.isEmpty) {
+      if (json['employers'] != null &&
+          json['employers'] is List &&
+          (json['employers'] as List).isNotEmpty) {
+        roleList.add('employer');
+      } else if (json['job_seeker_profile'] != null ||
+          json['profile'] != null) {
+        roleList.add('job_seeker');
+      } else {
+        roleList.add('job_seeker');
       }
     }
 
@@ -45,25 +117,29 @@ class UserModel {
       profilePhoto: json['profile_photo'] ?? json['avatar'],
       status: json['status'] ?? 'active',
       roles: roleList,
-      profile: json['job_seeker_profile'] != null
-          ? JobSeekerProfileModel.fromJson(json['job_seeker_profile'])
+      profile: (json['job_seeker_profile'] ?? json['profile']) is Map
+          ? JobSeekerProfileModel.fromJson(
+              Map<String, dynamic>.from(
+                json['job_seeker_profile'] ?? json['profile'],
+              ),
+            )
           : null,
       employers: json['employers'] != null && json['employers'] is List
           ? (json['employers'] as List)
-              .map((e) => EmployerModel.fromJson(e))
-              .toList()
+                .map((e) => EmployerModel.fromJson(e))
+                .toList()
           : null,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'status': status,
-        'roles': roles,
-      };
+    'id': id,
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'status': status,
+    'roles': roles,
+  };
 }
 
 class JobSeekerProfileModel {

@@ -1,13 +1,16 @@
 <?php
 
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AdsConsentController;
 use App\Http\Controllers\Api\AdvertisementController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CareerAssistantController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EmployerController;
 use App\Http\Controllers\Api\EthiopianFeaturesController;
+use App\Http\Controllers\Api\JobAlertController;
 use App\Http\Controllers\Api\JobCategoryController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\NotificationController;
@@ -27,7 +30,7 @@ Route::prefix('v1')->group(function () {
     // Public Authentication Endpoints
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('register', [AuthController::class, 'register']); // alias
-    Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/login', [AuthController::class, 'login'])->name('login');
     Route::post('login', [AuthController::class, 'login']); // alias
     Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('password/forgot', [AuthController::class, 'forgotPassword']); // alias
@@ -43,11 +46,19 @@ Route::prefix('v1')->group(function () {
     Route::get('jobs', [JobController::class, 'index']);
     Route::get('jobs/search', [JobController::class, 'search']);
     Route::get('jobs/{id}', [JobController::class, 'show'])->where('id', '[0-9]+');
+    Route::get('jobs/{id}/fraud-assessment', [JobController::class, 'fraudAssessment'])->where('id', '[0-9]+');
 
     // Public Advertisements
     Route::get('advertisements', [AdvertisementController::class, 'index']);
     Route::post('advertisements/{id}/impression', [AdvertisementController::class, 'recordImpression'])->where('id', '[0-9]+');
     Route::post('advertisements/{id}/click', [AdvertisementController::class, 'recordClick'])->where('id', '[0-9]+');
+
+    // Ads & Privacy Consent Management (Audited & Privacy-Compliant)
+    Route::get('ads-consent', [AdsConsentController::class, 'show']);
+    Route::post('ads-consent', [AdsConsentController::class, 'store']);
+    Route::post('ads-consent/withdraw', [AdsConsentController::class, 'withdraw']);
+    Route::post('ads-consent/sync', [AdsConsentController::class, 'syncAccount']);
+    Route::get('ads-consent/history', [AdsConsentController::class, 'history']);
 
     // Document Download & View (supports Bearer token header or ?token= query parameter)
     Route::get('documents/{id}/download', [DocumentController::class, 'download'])->where('id', '[0-9]+');
@@ -77,10 +88,12 @@ Route::prefix('v1')->group(function () {
         Route::delete('profile/skills/{id}', [ProfileController::class, 'removeSkill']);
         Route::get('profile/education', [ProfileController::class, 'getEducation']);
         Route::post('profile/education', [ProfileController::class, 'addEducation']);
-        Route::delete('profile/education/{id}', [ProfileController::class, 'removeEducation']);
+        Route::put('profile/education/{id}', [ProfileController::class, 'updateEducation'])->where('id', '[0-9]+');
+        Route::delete('profile/education/{id}', [ProfileController::class, 'removeEducation'])->where('id', '[0-9]+');
         Route::get('profile/experience', [ProfileController::class, 'getExperience']);
         Route::post('profile/experience', [ProfileController::class, 'addExperience']);
-        Route::delete('profile/experience/{id}', [ProfileController::class, 'removeExperience']);
+        Route::put('profile/experience/{id}', [ProfileController::class, 'updateExperience'])->where('id', '[0-9]+');
+        Route::delete('profile/experience/{id}', [ProfileController::class, 'removeExperience'])->where('id', '[0-9]+');
 
         // Employer Endpoints
         Route::post('employers', [EmployerController::class, 'registerOrganization']);
@@ -92,6 +105,7 @@ Route::prefix('v1')->group(function () {
 
         // Job Management (Employer / Author)
         Route::post('jobs', [JobController::class, 'store']);
+        Route::post('jobs/check-fraud', [JobController::class, 'checkFraud']);
         Route::put('jobs/{id}', [JobController::class, 'update'])->where('id', '[0-9]+');
         Route::delete('jobs/{id}', [JobController::class, 'destroy'])->where('id', '[0-9]+');
         Route::get('jobs/{id}/applicants', [JobController::class, 'applicants'])->where('id', '[0-9]+');
@@ -111,6 +125,24 @@ Route::prefix('v1')->group(function () {
         Route::post('applications/{id}/interview', [ApplicationController::class, 'scheduleInterview'])->where('id', '[0-9]+');
         Route::post('applications/{id}/interview/confirm', [ApplicationController::class, 'confirmInterview'])->where('id', '[0-9]+');
         Route::post('applications/{id}/interview/reschedule', [ApplicationController::class, 'rescheduleInterview'])->where('id', '[0-9]+');
+
+        // Job Offer Management (Section 11)
+        Route::post('applications/{id}/offer', [ApplicationController::class, 'createOffer'])->where('id', '[0-9]+');
+        Route::get('applications/{id}/offer', [ApplicationController::class, 'offerDetails'])->where('id', '[0-9]+');
+        Route::post('applications/{id}/offer/respond', [ApplicationController::class, 'respondOffer'])->where('id', '[0-9]+');
+
+        // Custom Job Alerts (Section 6)
+        Route::get('job-alerts', [JobAlertController::class, 'index']);
+        Route::post('job-alerts', [JobAlertController::class, 'store']);
+        Route::patch('job-alerts/{id}/toggle', [JobAlertController::class, 'toggle'])->where('id', '[0-9]+');
+        Route::delete('job-alerts/{id}', [JobAlertController::class, 'destroy'])->where('id', '[0-9]+');
+        Route::get('job-alerts/{id}/matches', [JobAlertController::class, 'matches'])->where('id', '[0-9]+');
+
+        // AI Career Assistant & Skill-Gap Analysis (Section 8 & 14)
+        Route::post('career-assistant/ask', [CareerAssistantController::class, 'ask']);
+        Route::post('career-assistant/cover-letter', [CareerAssistantController::class, 'generateCoverLetter']);
+        Route::post('career-assistant/interview-practice', [CareerAssistantController::class, 'interviewPractice']);
+        Route::get('career-assistant/skill-gap/{jobId}', [CareerAssistantController::class, 'skillGap'])->where('jobId', '[0-9]+');
 
         // Skills-Based Matching & Recommendations
         Route::get('recommendations/jobs', [RecommendationController::class, 'recommendations']);
@@ -156,6 +188,12 @@ Route::prefix('v1')->group(function () {
             Route::patch('verifications/{id}', [AdminController::class, 'reviewVerification'])->where('id', '[0-9]+');
             Route::get('statistics', [AdminController::class, 'statistics']);
             Route::get('reports', [AdminController::class, 'reports']);
+            Route::patch('reports/{id}', [AdminController::class, 'moderateReport'])->where('id', '[0-9]+');
+
+            // Fraudulent Job Advertisements Moderation
+            Route::get('fraud-jobs', [AdminController::class, 'fraudJobs']);
+            Route::post('fraud-jobs/{id}/moderate', [AdminController::class, 'moderateJob'])->where('id', '[0-9]+');
+            Route::post('fraud-scan', [AdminController::class, 'scanFraudJobs']);
         });
 
         // Advertisements & Promotional Campaigns (Admin & Employer Management)

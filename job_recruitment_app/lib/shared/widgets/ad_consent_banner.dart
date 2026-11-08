@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../features/advertising/ad_consent_modal.dart';
+import '../../repositories/ads_consent_repository.dart';
 import '../../services/storage_service.dart';
 
 class AdConsentBanner extends StatefulWidget {
@@ -27,18 +30,39 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
   }
 
   void _checkVisibility() {
-    final status = widget.storageService.getAdConsentStatus();
+    final requiresConsent =
+        !widget.storageService.hasConsentRecorded() ||
+        widget.storageService.requiresPolicyReconsent('1.0');
     setState(() {
-      _isVisible = status == null;
+      _isVisible = requiresConsent;
     });
   }
 
   Future<void> _handleQuickChoice(bool acceptAll) async {
-    await widget.storageService.saveAdConsent(
-      status: acceptAll ? 'accepted' : 'rejected',
-      personalized: acceptAll,
-      analytics: acceptAll,
-    );
+    AdsConsentRepository? repo;
+    try {
+      repo = Provider.of<AdsConsentRepository>(context, listen: false);
+    } catch (_) {}
+
+    final status = acceptAll ? 'accepted' : 'rejected';
+    if (repo != null) {
+      await repo.saveConsent(
+        status: status,
+        nonPersonalized: acceptAll,
+        personalized: acceptAll,
+        analytics: acceptAll,
+        cookies: acceptAll,
+      );
+    } else {
+      await widget.storageService.saveAdConsent(
+        status: status,
+        nonPersonalized: acceptAll,
+        personalized: acceptAll,
+        analytics: acceptAll,
+        cookies: acceptAll,
+      );
+    }
+
     setState(() => _isVisible = false);
     if (widget.onConsentChanged != null) {
       widget.onConsentChanged!();
@@ -70,7 +94,11 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
         children: [
           Row(
             children: [
-              const Icon(Icons.cookie_outlined, color: AppTheme.primaryColor, size: 20),
+              const Icon(
+                Icons.privacy_tip_outlined,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -86,7 +114,7 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
           ),
           const SizedBox(height: 6),
           Text(
-            'We use cookies and profile preferences to serve personalized job advertisements and calculate engagement metrics. You can accept, reject, or manage your preferences anytime.',
+            'We use cookies and profile preferences to serve contextual job vacancy advertisements, personalize matching, and compute campaign telemetry. You have full control to accept, reject, or customize your permissions anytime.',
             style: TextStyle(fontSize: 11.5, color: Colors.grey.shade700),
           ),
           const SizedBox(height: 10),
@@ -100,20 +128,27 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
                     storageService: widget.storageService,
                     onConsentUpdated: () {
                       _checkVisibility();
-                      if (widget.onConsentChanged != null) widget.onConsentChanged!();
+                      if (widget.onConsentChanged != null) {
+                        widget.onConsentChanged!();
+                      }
                     },
                   );
                 },
-                child: const Text('Manage', style: TextStyle(fontSize: 12)),
+                child: const Text('Customize', style: TextStyle(fontSize: 12)),
               ),
               const SizedBox(width: 6),
               OutlinedButton(
                 onPressed: () => _handleQuickChoice(false),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  foregroundColor: Colors.red.shade700,
+                  side: BorderSide(color: Colors.red.shade300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   minimumSize: const Size(0, 32),
                 ),
-                child: const Text('Reject', style: TextStyle(fontSize: 12)),
+                child: const Text('Reject All', style: TextStyle(fontSize: 12)),
               ),
               const SizedBox(width: 6),
               ElevatedButton(
@@ -121,7 +156,10 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   minimumSize: const Size(0, 32),
                 ),
                 child: const Text('Accept All', style: TextStyle(fontSize: 12)),

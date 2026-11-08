@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/application_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -9,10 +10,7 @@ import 'application_detail_screen.dart';
 class MyApplicationsScreen extends StatefulWidget {
   final ApplicationRepository appRepo;
 
-  const MyApplicationsScreen({
-    super.key,
-    required this.appRepo,
-  });
+  const MyApplicationsScreen({super.key, required this.appRepo});
 
   @override
   State<MyApplicationsScreen> createState() => _MyApplicationsScreenState();
@@ -31,33 +29,49 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
 
   Future<void> _loadApplications() async {
     setState(() => _isLoading = true);
-    final apps = await widget.appRepo.getMyApplications();
-    if (mounted) {
-      setState(() {
-        _applications = apps;
-        _isLoading = false;
-      });
+    try {
+      final apps = await widget.appRepo.getMyApplications();
+      if (mounted) {
+        setState(() {
+          _applications = apps;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   List<ApplicationModel> get _filteredApplications {
     if (_selectedFilter == 'all') return _applications;
     if (_selectedFilter == 'pending') {
-      return _applications.where((a) => a.status == 'submitted' || a.status == 'pending').toList();
+      return _applications
+          .where((a) => a.status == 'submitted' || a.status == 'pending')
+          .toList();
     }
     if (_selectedFilter == 'interview') {
-      return _applications.where((a) => a.status == 'interview' || a.interviewAt != null).toList();
+      return _applications
+          .where((a) => a.status == 'interview' || a.interviewAt != null)
+          .toList();
     }
-    return _applications.where((a) => a.status.toLowerCase() == _selectedFilter).toList();
+    return _applications
+        .where((a) => a.status.toLowerCase() == _selectedFilter)
+        .toList();
   }
 
   int _countFor(String filter) {
     if (filter == 'all') return _applications.length;
     if (filter == 'pending') {
-      return _applications.where((a) => a.status == 'submitted' || a.status == 'pending').length;
+      return _applications
+          .where((a) => a.status == 'submitted' || a.status == 'pending')
+          .length;
     }
     if (filter == 'interview') {
-      return _applications.where((a) => a.status == 'interview' || a.interviewAt != null).length;
+      return _applications
+          .where((a) => a.status == 'interview' || a.interviewAt != null)
+          .length;
     }
     return _applications.where((a) => a.status.toLowerCase() == filter).length;
   }
@@ -112,8 +126,12 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                               count > 0 ? '$label ($count)' : label,
                               style: TextStyle(
                                 fontSize: 12,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? Colors.white : const Color(0xFF334155),
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF334155),
                               ),
                             ),
                             selected: isSelected,
@@ -149,16 +167,22 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
                               final app = filtered[index];
-                              final hasInterview = app.interviewAt != null || app.status == 'interview';
+                              final hasInterview =
+                                  app.interviewAt != null ||
+                                  app.status == 'interview';
 
                               return Card(
-                                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
                                 elevation: 0.5,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   side: BorderSide(
                                     color: hasInterview
-                                        ? const Color(0xFF0D6B4F).withOpacity(0.4)
+                                        ? const Color(0xFF0D6B4F)
+                                              .withOpacity(0.4)
                                         : Colors.grey.shade200,
                                     width: hasInterview ? 1.5 : 1,
                                   ),
@@ -179,15 +203,21 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                   child: Padding(
                                     padding: const EdgeInsets.all(14),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Expanded(
                                               child: Text(
-                                                app.job?.title ?? 'Vacancy Application',
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                                app.job?.title ??
+                                                    'Vacancy Application',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 15,
+                                                ),
                                               ),
                                             ),
                                             StatusBadge(status: app.status),
@@ -195,44 +225,73 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          app.job?.employer?.organizationName ?? 'Employer',
-                                          style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                                          app.job?.employer?.organizationName ??
+                                              'Employer',
+                                          style: const TextStyle(
+                                            color: Color(0xFF64748B),
+                                            fontSize: 13,
+                                          ),
                                         ),
                                         const SizedBox(height: 8),
 
-                                        if (hasInterview && app.interviewAt != null) ...[
+                                        if (hasInterview &&
+                                            app.interviewAt != null) ...[
                                           Container(
-                                            margin: const EdgeInsets.only(bottom: 8),
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            margin: const EdgeInsets.only(
+                                              bottom: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 6,
+                                            ),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF0D6B4F).withOpacity(0.08),
-                                              borderRadius: BorderRadius.circular(8),
+                                              color: const Color(0xFF0D6B4F)
+                                                  .withOpacity(0.08),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Row(
                                               children: [
-                                                const Icon(Icons.event, size: 16, color: Color(0xFF0D6B4F)),
+                                                const Icon(
+                                                  Icons.event,
+                                                  size: 16,
+                                                  color: Color(0xFF0D6B4F),
+                                                ),
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: Text(
                                                     'Interview: ${app.interviewAt!.replaceFirst('T', ' ').split('.').first} (${app.interviewType ?? "Online"})',
                                                     style: const TextStyle(
                                                       fontSize: 12,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: Color(0xFF0D6B4F),
                                                     ),
                                                   ),
                                                 ),
                                                 Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 6,
+                                                        vertical: 2,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    color: const Color(0xFF0D6B4F),
-                                                    borderRadius: BorderRadius.circular(4),
+                                                    color: const Color(
+                                                      0xFF0D6B4F,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          4,
+                                                        ),
                                                   ),
                                                   child: Text(
-                                                    app.interviewStatus?.toUpperCase() ?? 'BOOKED',
+                                                    app.interviewStatus
+                                                            ?.toUpperCase() ??
+                                                        'BOOKED',
                                                     style: const TextStyle(
                                                       fontSize: 10,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: Colors.white,
                                                     ),
                                                   ),
@@ -243,11 +302,15 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                         ],
 
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
                                               'Applied: ${app.appliedAt.split('T').first}',
-                                              style: const TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF94A3B8),
+                                              ),
                                             ),
                                             const Row(
                                               children: [
@@ -259,7 +322,11 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
                                                     fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
-                                                Icon(Icons.chevron_right, size: 16, color: Color(0xFF0D6B4F)),
+                                                Icon(
+                                                  Icons.chevron_right,
+                                                  size: 16,
+                                                  color: Color(0xFF0D6B4F),
+                                                ),
                                               ],
                                             ),
                                           ],

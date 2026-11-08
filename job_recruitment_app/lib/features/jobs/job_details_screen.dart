@@ -1,6 +1,8 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
@@ -18,6 +20,7 @@ import '../applications/apply_job_sheet.dart';
 import '../applications/my_applications_screen.dart';
 import '../authentication/login_screen.dart';
 import '../employer/create_job_screen.dart';
+import '../job_seeker/ai_career_assistant_screen.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final int jobId;
@@ -54,38 +57,56 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   Future<void> _loadJob() async {
     setState(() => _isLoading = true);
-    final job = await widget.jobRepo.getJobDetails(widget.jobId);
-    Map<String, dynamic>? match;
     try {
-      match = await widget.jobRepo.getMatchDetails(widget.jobId);
-    } catch (_) {}
-
-    MapLocationResult? locResult;
-    PlaceProfile? placeProf;
-    if (job != null) {
-      locResult = job.latitude != null && job.longitude != null
-          ? MapLocationResult(latitude: job.latitude!, longitude: job.longitude!, displayName: job.location)
-          : await MapService.geocode(job.location, organizationName: job.employer?.organizationName);
-      placeProf = await MapService.getPlaceProfile(job.location, organizationName: job.employer?.organizationName);
-    }
-
-    List<JobModel> similar = [];
-    if (job != null) {
+      final job = await widget.jobRepo.getJobDetails(widget.jobId);
+      Map<String, dynamic>? match;
       try {
-        final results = await widget.jobRepo.getJobs(location: job.location);
-        similar = results.where((j) => j.id != job.id).take(3).toList();
+        match = await widget.jobRepo.getMatchDetails(widget.jobId);
       } catch (_) {}
-    }
 
-    if (mounted) {
-      setState(() {
-        _job = job;
-        _matchAnalysis = match;
-        _mapLocation = locResult;
-        _placeProfile = placeProf;
-        _similarJobs = similar;
-        _isLoading = false;
-      });
+      MapLocationResult? locResult;
+      PlaceProfile? placeProf;
+      if (job != null) {
+        try {
+          locResult = job.latitude != null && job.longitude != null
+              ? MapLocationResult(
+                  latitude: job.latitude!,
+                  longitude: job.longitude!,
+                  displayName: job.location,
+                )
+              : await MapService.geocode(
+                  job.location,
+                  organizationName: job.employer?.organizationName,
+                );
+          placeProf = await MapService.getPlaceProfile(
+            job.location,
+            organizationName: job.employer?.organizationName,
+          );
+        } catch (_) {}
+      }
+
+      List<JobModel> similar = [];
+      if (job != null) {
+        try {
+          final results = await widget.jobRepo.getJobs(location: job.location);
+          similar = results.where((j) => j.id != job.id).take(3).toList();
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          _job = job;
+          _matchAnalysis = match;
+          _mapLocation = locResult;
+          _placeProfile = placeProf;
+          _similarJobs = similar;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -159,11 +180,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Vacancy'),
-        content: Text('Are you sure you want to delete / archive "${_job!.title}"? This cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete / archive "${_job!.title}"? This cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
@@ -184,7 +213,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           Navigator.pop(context, true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp.message.isNotEmpty ? resp.message : 'Failed to delete vacancy.')),
+            SnackBar(
+              content: Text(
+                resp.message.isNotEmpty
+                    ? resp.message
+                    : 'Failed to delete vacancy.',
+              ),
+            ),
           );
         }
       }
@@ -195,9 +230,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final d = DateTime.parse(deadline);
       final today = DateTime.now();
-      return DateTime(d.year, d.month, d.day)
-          .difference(DateTime(today.year, today.month, today.day))
-          .inDays;
+      return DateTime(
+        d.year,
+        d.month,
+        d.day,
+      ).difference(DateTime(today.year, today.month, today.day)).inDays;
     } catch (_) {
       return 0;
     }
@@ -207,13 +244,391 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     final n = pow(2, zoom).toInt();
     final x = (((lon + 180) / 360) * n).floor();
     final latRad = lat * pi / 180;
-    final y = (((1 - (log(tan(latRad) + (1 / cos(latRad))) / pi)) / 2) * n).floor();
+    final y = (((1 - (log(tan(latRad) + (1 / cos(latRad))) / pi)) / 2) * n)
+        .floor();
     return 'https://tile.openstreetmap.org/$zoom/$x/$y.png';
   }
 
   void _showShareDialog() {
     if (_job == null) return;
     ShareWithFriendsModal.show(context, _job!);
+  }
+
+  void _showSafetyAdviceModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.65,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollCtrl) => SingleChildScrollView(
+          controller: scrollCtrl,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.security, color: Color(0xFF0D6B4F), size: 28),
+                  SizedBox(width: 10),
+                  Text(
+                    'Anti-Fraud Safety Advisory',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Protect yourself from fraudulent job advertisements. Keep these recruitment security rules in mind:',
+                style: TextStyle(color: Colors.black87, fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              _buildSafetyTip(
+                '1. Never Pay Upfront Fees',
+                'Legitimate Ethiopian employers NEVER demand registration fees, interview deposits, processing fees, or money for uniform/medical checks before formal employment.',
+                Icons.money_off,
+              ),
+              _buildSafetyTip(
+                '2. Beware Off-Platform Redirection',
+                'Scammers frequently redirect candidates strictly to informal Telegram bots or private WhatsApp chats to evade platform monitoring and verification.',
+                Icons.chat_bubble_outline,
+              ),
+              _buildSafetyTip(
+                '3. Guard Your Banking Credentials & PINs',
+                'Never share bank account passwords, ATM PINs, OTP codes, or credit card numbers with any recruiter during application.',
+                Icons.lock_outline,
+              ),
+              _buildSafetyTip(
+                '4. Verify Company Registration',
+                'Look for the verified employer shield on the listing. Check business license and physical office presence.',
+                Icons.verified_user_outlined,
+              ),
+              _buildSafetyTip(
+                '5. Report Suspicious Vacancies Instantly',
+                'Use the "Report Vacancy" feature to trigger automated fraud quarantine and immediate administrator moderation.',
+                Icons.flag_outlined,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D6B4F),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Understood & Keep Safe'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSafetyTip(String title, String desc, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: const Color(0xFF0D6B4F).withOpacity(0.12),
+            child: Icon(icon, size: 16, color: const Color(0xFF0D6B4F)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFraudWarningBanner() {
+    if (_job == null) return const SizedBox.shrink();
+
+    final bool isCritical =
+        _job!.fraudRiskLevel == 'critical' || _job!.fraudScore >= 80;
+    final bool isHigh = _job!.isHighFraudRisk;
+    final bool isMedium = _job!.isMediumFraudRisk || _job!.isFlagged;
+    final bool isQuarantined = _job!.isQuarantinedOrFraud;
+
+    if (!isHigh && !isMedium && !isQuarantined) {
+      return const SizedBox.shrink();
+    }
+
+    final Color alertColor = isCritical || isQuarantined
+        ? const Color(0xFFDC2626)
+        : (isHigh ? const Color(0xFFEA580C) : const Color(0xFFD97706));
+
+    final String title = isQuarantined
+        ? '⚠️ High Risk: Vacancy Quarantined for Fraud Review'
+        : (isCritical || isHigh
+              ? '⚠️ Safety Alert: Potential Fraudulent Job Advertisement'
+              : '⚠️ Precaution: Moderate Risk Indicators Detected');
+
+    final String description = isQuarantined
+        ? 'This vacancy was flagged for suspicious recruitment practices and quarantined from search. Legitimate employers never charge application fees.'
+        : 'Our automated scam detector identified patterns associated with recruitment fraud. Never pay upfront fees, send money via Telegram, or provide bank PINs.';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: alertColor.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: alertColor, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.shield_outlined, color: alertColor, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: alertColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: alertColor,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '${_job!.fraudScore}% RISK',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: TextStyle(color: Colors.grey.shade800, fontSize: 12.5),
+          ),
+          if (_job!.fraudIndicators.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ..._job!.fraudIndicators
+                .take(3)
+                .map(
+                  (ind) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(
+                            color: alertColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            ind,
+                            style: TextStyle(
+                              color: Colors.red.shade900,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: alertColor,
+                  side: BorderSide(color: alertColor),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: const Icon(Icons.info_outline, size: 14),
+                label: const Text(
+                  'Safety Advice',
+                  style: TextStyle(fontSize: 12),
+                ),
+                onPressed: _showSafetyAdviceModal,
+              ),
+              const SizedBox(width: 8),
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  foregroundColor: alertColor,
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: const Icon(Icons.flag_outlined, size: 14),
+                label: const Text(
+                  'Report Fraud',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                onPressed: _showReportDialog,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiCareerToolkitCard() {
+    if (_job == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.auto_awesome, color: Color(0xFF0D6B4F), size: 20),
+              SizedBox(width: 8),
+              Text(
+                'AI Career Preparation Toolkit',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Prepare your application with AI-tailored cover letters, interview question simulations, and skill-gap readiness check.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF475569)),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ActionChip(
+                avatar: const Icon(
+                  Icons.description_outlined,
+                  size: 16,
+                  color: Color(0xFF0D6B4F),
+                ),
+                label: const Text(
+                  'Cover Letter Draft',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF86EFAC)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiCareerAssistantScreen(
+                        initialJobId: _job!.id,
+                        initialTabIndex: 1,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ActionChip(
+                avatar: const Icon(
+                  Icons.record_voice_over_outlined,
+                  size: 16,
+                  color: Color(0xFF2563EB),
+                ),
+                label: const Text(
+                  'Interview Prep',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFF93C5FD)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiCareerAssistantScreen(
+                        initialJobId: _job!.id,
+                        initialTabIndex: 2,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ActionChip(
+                avatar: const Icon(
+                  Icons.analytics_outlined,
+                  size: 16,
+                  color: Color(0xFF7C3AED),
+                ),
+                label: const Text(
+                  'Skill-Gap Check',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                backgroundColor: Colors.white,
+                side: const BorderSide(color: Color(0xFFC4B5FD)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiCareerAssistantScreen(
+                        initialJobId: _job!.id,
+                        initialTabIndex: 3,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _showReportDialog() {
@@ -238,19 +653,52 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Help us keep the recruitment platform secure by reporting suspicious activity:', style: TextStyle(fontSize: 13)),
+                const Text(
+                  'Help us keep the recruitment platform secure by reporting suspicious activity:',
+                  style: TextStyle(fontSize: 13),
+                ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: selectedReason,
-                  decoration: const InputDecoration(labelText: 'Reason for Report'),
+                  decoration: const InputDecoration(
+                    labelText: 'Reason for Report',
+                  ),
                   items: const [
-                    DropdownMenuItem(value: 'Fraudulent / Scam Listing', child: Text('Fraudulent / Scam Listing')),
-                    DropdownMenuItem(value: 'Inaccurate Salary or Details', child: Text('Inaccurate Salary or Details')),
-                    DropdownMenuItem(value: 'Expired or Closed Vacancy', child: Text('Expired or Closed Vacancy')),
-                    DropdownMenuItem(value: 'Discriminatory Requirements', child: Text('Discriminatory Requirements')),
-                    DropdownMenuItem(value: 'Other Policy Violation', child: Text('Other Policy Violation')),
+                    DropdownMenuItem(
+                      value: 'Fraudulent / Scam Listing',
+                      child: Text('Fraudulent / Scam Listing'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Upfront Fee / Payment Demand',
+                      child: Text('Upfront Fee / Payment Demand'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Fake Company / Impersonation',
+                      child: Text('Fake Company / Impersonation'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Telegram / WhatsApp Phishing',
+                      child: Text('Telegram / WhatsApp Phishing'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Inaccurate Salary or Details',
+                      child: Text('Inaccurate Salary or Details'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Expired or Closed Vacancy',
+                      child: Text('Expired or Closed Vacancy'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Discriminatory Requirements',
+                      child: Text('Discriminatory Requirements'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'Other Policy Violation',
+                      child: Text('Other Policy Violation'),
+                    ),
                   ],
-                  onChanged: (val) => setDialogState(() => selectedReason = val!),
+                  onChanged: (val) =>
+                      setDialogState(() => selectedReason = val!),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -258,7 +706,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   maxLines: 3,
                   decoration: const InputDecoration(
                     labelText: 'Additional Details (Optional)',
-                    hintText: 'Describe the issue...',
+                    hintText: 'Describe why this vacancy seems fraudulent...',
                   ),
                 ),
               ],
@@ -277,22 +725,42 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       final resp = await widget.jobRepo.reportJob(
                         _job!.id,
                         selectedReason,
-                        descController.text.trim().isNotEmpty ? descController.text.trim() : null,
+                        descController.text.trim().isNotEmpty
+                            ? descController.text.trim()
+                            : null,
                       );
                       if (mounted) {
                         Navigator.pop(dialogCtx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(resp.success ? 'Report submitted for administrator review.' : resp.message),
-                            backgroundColor: resp.success ? const Color(0xFF0D6B4F) : Colors.red,
+                            content: Text(
+                              resp.success
+                                  ? 'Report submitted. Listing flagged for administrator review.'
+                                  : resp.message,
+                            ),
+                            backgroundColor: resp.success
+                                ? const Color(0xFF0D6B4F)
+                                : Colors.red,
                           ),
                         );
                       }
                     },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+              ),
               child: isSubmitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Submit Report', style: TextStyle(color: Colors.white)),
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text(
+                      'Submit Report',
+                      style: TextStyle(color: Colors.white),
+                    ),
             ),
           ],
         ),
@@ -308,9 +776,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Authentication Required'),
-          content: const Text('Please sign in or create an account to apply for this vacancy.'),
+          content: const Text(
+            'Please sign in or create an account to apply for this vacancy.',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 final api = Provider.of<ApiService>(context, listen: false);
@@ -362,7 +835,42 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     if (_job == null) {
       return Scaffold(
         appBar: AppBar(title: Text(loc.t('jobs'))),
-        body: const Center(child: Text('Vacancy not found.')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.work_off_outlined,
+                  size: 54,
+                  color: Colors.grey,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Vacancy details could not be loaded.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Please check your internet connection or try again later.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: _loadJob,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D6B4F),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -374,11 +882,16 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     final double? lat = _mapLocation?.latitude;
     final double? lon = _mapLocation?.longitude;
 
-    final currentUser = Provider.of<AuthService>(context, listen: false).currentUser;
-    final bool isJobOwner = currentUser != null && (
-      currentUser.isAdmin ||
-      (currentUser.isEmployer && currentUser.employers != null && currentUser.employers!.any((e) => e.id == _job!.employerId))
-    );
+    final currentUser = Provider.of<AuthService>(
+      context,
+      listen: false,
+    ).currentUser;
+    final bool isJobOwner =
+        currentUser != null &&
+        (currentUser.isAdmin ||
+            (currentUser.isEmployer &&
+                currentUser.employers != null &&
+                currentUser.employers!.any((e) => e.id == _job!.employerId)));
 
     return Scaffold(
       appBar: AppBar(
@@ -449,7 +962,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       color: const Color(0xFF0D6B4F),
                     ),
                     const SizedBox(width: 8),
-                    Text(_job!.isSaved ? 'Remove from Saved' : 'Save / Bookmark Job'),
+                    Text(
+                      _job!.isSaved
+                          ? 'Remove from Saved'
+                          : 'Save / Bookmark Job',
+                    ),
                   ],
                 ),
               ),
@@ -457,7 +974,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 value: 'map',
                 child: Row(
                   children: [
-                    Icon(Icons.map_outlined, size: 18, color: Color(0xFF0D6B4F)),
+                    Icon(
+                      Icons.map_outlined,
+                      size: 18,
+                      color: Color(0xFF0D6B4F),
+                    ),
                     SizedBox(width: 8),
                     Text('View Location Map'),
                   ],
@@ -468,9 +989,16 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 value: 'report',
                 child: Row(
                   children: [
-                    Icon(Icons.flag_outlined, size: 18, color: Color(0xFFDC2626)),
+                    Icon(
+                      Icons.flag_outlined,
+                      size: 18,
+                      color: Color(0xFFDC2626),
+                    ),
                     SizedBox(width: 8),
-                    Text('Report Vacancy', style: TextStyle(color: Color(0xFFDC2626))),
+                    Text(
+                      'Report Vacancy',
+                      style: TextStyle(color: Color(0xFFDC2626)),
+                    ),
                   ],
                 ),
               ),
@@ -501,11 +1029,18 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.check_circle, color: Color(0xFF0D6B4F), size: 18),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF0D6B4F),
+                                size: 18,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 '${loc.t('applied')}:',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ],
                           ),
@@ -520,7 +1055,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => MyApplicationsScreen(appRepo: widget.appRepo),
+                            builder: (_) =>
+                                MyApplicationsScreen(appRepo: widget.appRepo),
                           ),
                         );
                       },
@@ -530,71 +1066,91 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ],
                 )
               : isJobOwner
-                  ? Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _deleteVacancyFromDetails,
-                            icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
-                            label: const Text('Delete Vacancy', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFDC2626)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
+              ? Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _deleteVacancyFromDetails,
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Color(0xFFDC2626),
+                        ),
+                        label: const Text(
+                          'Delete Vacancy',
+                          style: TextStyle(
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            onPressed: _editVacancyFromDetails,
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Edit Vacancy Details', style: TextStyle(fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0D6B4F),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFDC2626)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                      ],
-                    )
-                  : (_job!.status != 'published' || daysRemaining < 0)
-                      ? Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.lock_clock, color: Color(0xFF64748B)),
-                              const SizedBox(width: 8),
-                              Text(
-                                daysRemaining < 0
-                                    ? 'Application Deadline Has Passed'
-                                    : 'Vacancy is ${_job!.status.toUpperCase()} (Not accepting applications)',
-                                style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                              ),
-                            ],
-                          ),
-                        )
-                      : SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _handleApplyNow,
-                            icon: const Icon(Icons.send_rounded, size: 18),
-                            label: Text(
-                              loc.t('apply_now'),
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0D6B4F),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              elevation: 2,
-                            ),
-                          ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: _editVacancyFromDetails,
+                        icon: const Icon(Icons.edit_outlined),
+                        label: const Text(
+                          'Edit Vacancy Details',
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0D6B4F),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : (_job!.status != 'published' || daysRemaining < 0)
+              ? Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.lock_clock, color: Color(0xFF64748B)),
+                      const SizedBox(width: 8),
+                      Text(
+                        daysRemaining < 0
+                            ? 'Application Deadline Has Passed'
+                            : 'Vacancy is ${_job!.status.toUpperCase()} (Not accepting applications)',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _handleApplyNow,
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: Text(
+                      loc.t('apply_now'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D6B4F),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
         ),
       ),
       body: ListView(
@@ -603,6 +1159,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           // Deadline Countdown Urgency Banner
           _buildDeadlineBanner(daysRemaining),
           const SizedBox(height: 12),
+
+          // Fraudulent Job Advertisement Safety Alert Banner
+          _buildFraudWarningBanner(),
 
           // Header Card
           Card(
@@ -630,10 +1189,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           score: matchScore,
                           onTap: _matchAnalysis != null
                               ? () => MatchDetailDialog.show(
-                                    context,
-                                    _job!.title,
-                                    _matchAnalysis!,
-                                  )
+                                  context,
+                                  _job!.title,
+                                  _matchAnalysis!,
+                                )
                               : null,
                         ),
                     ],
@@ -641,10 +1200,15 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.business, size: 16, color: Color(0xFF0D6B4F)),
+                      const Icon(
+                        Icons.business,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        _job!.employer?.organizationName ?? 'Enterprise Organization',
+                        _job!.employer?.organizationName ??
+                            'Enterprise Organization',
                         style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xFF334155),
@@ -652,7 +1216,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      const Icon(Icons.verified, size: 16, color: Color(0xFF0D6B4F)),
+                      if (_job!.employer?.verificationStatus == 'approved')
+                        const Tooltip(
+                          message: 'Verified Organization',
+                          child: Icon(
+                            Icons.verified,
+                            size: 16,
+                            color: Color(0xFF0D6B4F),
+                          ),
+                        )
+                      else
+                        Tooltip(
+                          message: 'Unverified Organization - Exercise Caution',
+                          child: Icon(
+                            Icons.warning_amber_rounded,
+                            size: 16,
+                            color: Colors.amber.shade800,
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -689,6 +1270,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               ),
             ),
           ),
+          _buildAiCareerToolkitCard(),
           const SizedBox(height: 16),
 
           // Interactive Workplace & Directions OpenStreetMap Mini-Card
@@ -705,7 +1287,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       const SizedBox(width: 8),
                       const Text(
                         'Workplace Location & Directions',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Spacer(),
                       TextButton.icon(
@@ -720,7 +1305,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           );
                         },
                         icon: const Icon(Icons.open_in_full, size: 14),
-                        label: const Text('Open Map', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Open Map',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -740,11 +1328,20 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             child: Image.network(
                               _placeProfile!.imageUrl!,
                               fit: BoxFit.cover,
-                              headers: const {'User-Agent': 'JobSeekerEthiopiaRecruitmentApp/1.0'},
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: const Color(0xFF1E293B),
-                                child: const Center(child: Icon(Icons.image, color: Colors.white54)),
-                              ),
+                              headers: const {
+                                'User-Agent':
+                                    'JobSeekerEthiopiaRecruitmentApp/1.0',
+                              },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: const Color(0xFF1E293B),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.image,
+                                        color: Colors.white54,
+                                      ),
+                                    ),
+                                  ),
                             ),
                           ),
                           Positioned.fill(
@@ -753,7 +1350,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, Colors.black.withOpacity(0.75)],
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.75),
+                                  ],
                                 ),
                               ),
                             ),
@@ -762,7 +1362,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             top: 8,
                             left: 8,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.65),
                                 borderRadius: BorderRadius.circular(4),
@@ -770,11 +1373,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.photo_camera, size: 12, color: Colors.white),
+                                  Icon(
+                                    Icons.photo_camera,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Place Profile Image',
-                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -789,12 +1400,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               children: [
                                 Text(
                                   _placeProfile!.name,
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 if (_placeProfile!.description != null)
                                   Text(
                                     _placeProfile!.description!,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -822,11 +1440,20 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 child: Image.network(
                                   _getOsmTileUrl(lat, lon, 14),
                                   fit: BoxFit.cover,
-                                  headers: const {'User-Agent': 'JobSeekerEthiopiaRecruitmentApp/1.0'},
-                                  errorBuilder: (context, error, stackTrace) => Container(
-                                    color: const Color(0xFFF1F5F9),
-                                    child: const Center(child: Icon(Icons.map, color: Colors.grey)),
-                                  ),
+                                  headers: const {
+                                    'User-Agent':
+                                        'JobSeekerEthiopiaRecruitmentApp/1.0',
+                                  },
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                        color: const Color(0xFFF1F5F9),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.map,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
                                 ),
                               ),
                               Center(
@@ -834,26 +1461,43 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(8),
                                         boxShadow: [
-                                          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4),
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.1,
+                                            ),
+                                            blurRadius: 4,
+                                          ),
                                         ],
                                       ),
                                       child: Text(
                                         _job!.location,
-                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                    const Icon(Icons.location_pin, color: Color(0xFFDC2626), size: 30),
+                                    const Icon(
+                                      Icons.location_pin,
+                                      color: Color(0xFFDC2626),
+                                      size: 30,
+                                    ),
                                   ],
                                 ),
                               ),
                             ],
                           )
-                        : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        : const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -863,13 +1507,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           onPressed: () {
                             MapService.openGoogleMaps(
                               _job!.location,
-                              organizationName: _job!.employer?.organizationName,
+                              organizationName:
+                                  _job!.employer?.organizationName,
                               lat: lat,
                               lon: lon,
                             );
                           },
-                          icon: const Icon(Icons.public, size: 15, color: Colors.white),
-                          label: const Text('Google Maps', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                          icon: const Icon(
+                            Icons.public,
+                            size: 15,
+                            color: Colors.white,
+                          ),
+                          label: const Text(
+                            'Google Maps',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1E88E5),
                             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -882,13 +1538,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           onPressed: () {
                             MapService.openDirections(
                               _job!.location,
-                              organizationName: _job!.employer?.organizationName,
+                              organizationName:
+                                  _job!.employer?.organizationName,
                               lat: lat,
                               lon: lon,
                             );
                           },
-                          icon: const Icon(Icons.directions, size: 15, color: Color(0xFF0284C7)),
-                          label: const Text('Directions', style: TextStyle(fontSize: 12, color: Color(0xFF0284C7))),
+                          icon: const Icon(
+                            Icons.directions,
+                            size: 15,
+                            color: Color(0xFF0284C7),
+                          ),
+                          label: const Text(
+                            'Directions',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF0284C7),
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             side: const BorderSide(color: Color(0xFF0284C7)),
@@ -899,10 +1566,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            MapService.openOpenStreetMap(_job!.location, lat: lat, lon: lon);
+                            MapService.openOpenStreetMap(
+                              _job!.location,
+                              lat: lat,
+                              lon: lon,
+                            );
                           },
-                          icon: const Icon(Icons.map_outlined, size: 15, color: Color(0xFF0D6B4F)),
-                          label: const Text('OSM Web', style: TextStyle(fontSize: 12, color: Color(0xFF0D6B4F))),
+                          icon: const Icon(
+                            Icons.map_outlined,
+                            size: 15,
+                            color: Color(0xFF0D6B4F),
+                          ),
+                          label: const Text(
+                            'OSM Web',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF0D6B4F),
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             side: const BorderSide(color: Color(0xFF0D6B4F)),
@@ -933,9 +1614,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   avatar: Icon(
                     isReq ? Icons.check_circle_outline : Icons.star_border,
                     size: 16,
-                    color: isReq ? const Color(0xFF0D6B4F) : const Color(0xFFD97706),
+                    color: isReq
+                        ? const Color(0xFF0D6B4F)
+                        : const Color(0xFFD97706),
                   ),
-                  label: Text('${skill.name} (${isReq ? "Required" : "Preferred"})'),
+                  label: Text(
+                    '${skill.name} (${isReq ? "Required" : "Preferred"})',
+                  ),
                   backgroundColor: isReq
                       ? const Color(0xFF0D6B4F).withOpacity(0.08)
                       : const Color(0xFFD97706).withOpacity(0.08),
@@ -953,12 +1638,17 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           const SizedBox(height: 8),
           Text(
             _job!.description,
-            style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.5),
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF334155),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
 
           // Responsibilities
-          if (_job!.responsibilities != null && _job!.responsibilities!.isNotEmpty) ...[
+          if (_job!.responsibilities != null &&
+              _job!.responsibilities!.isNotEmpty) ...[
             Text(
               loc.t('responsibilities'),
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -966,7 +1656,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             const SizedBox(height: 8),
             Text(
               _job!.responsibilities!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.5),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF334155),
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -980,7 +1674,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
             const SizedBox(height: 8),
             Text(
               _job!.requirements!,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF334155), height: 1.5),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF334155),
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 20),
           ],
@@ -997,38 +1695,60 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.apartment, color: Color(0xFF0D6B4F), size: 22),
+                        const Icon(
+                          Icons.apartment,
+                          color: Color(0xFF0D6B4F),
+                          size: 22,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _job!.employer!.organizationName,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
                     Text(
                       'Verified Ethiopian Employer • Actively hiring on JobSeeker',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        if (_job!.employer!.website != null && _job!.employer!.website!.isNotEmpty)
+                        if (_job!.employer!.website != null &&
+                            _job!.employer!.website!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: OutlinedButton.icon(
-                              onPressed: () => MapService.launchExternal(_job!.employer!.website!),
+                              onPressed: () => MapService.launchExternal(
+                                _job!.employer!.website!,
+                              ),
                               icon: const Icon(Icons.language, size: 14),
-                              label: const Text('Website', style: TextStyle(fontSize: 12)),
+                              label: const Text(
+                                'Website',
+                                style: TextStyle(fontSize: 12),
+                              ),
                             ),
                           ),
-                        if (_job!.employer!.phone != null && _job!.employer!.phone!.isNotEmpty)
+                        if (_job!.employer!.phone != null &&
+                            _job!.employer!.phone!.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: OutlinedButton.icon(
-                              onPressed: () => MapService.launchExternal('tel:${_job!.employer!.phone}'),
+                              onPressed: () => MapService.launchExternal(
+                                'tel:${_job!.employer!.phone}',
+                              ),
                               icon: const Icon(Icons.phone, size: 14),
-                              label: const Text('Contact', style: TextStyle(fontSize: 12)),
+                              label: const Text(
+                                'Contact',
+                                style: TextStyle(fontSize: 12),
+                              ),
                             ),
                           ),
                       ],
@@ -1047,32 +1767,46 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ..._similarJobs.map((sim) => Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFE2E8F0),
-                      child: Icon(Icons.work, color: Color(0xFF0D6B4F), size: 18),
-                    ),
-                    title: Text(sim.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    subtitle: Text('${sim.location} • ${sim.employmentType}', style: const TextStyle(fontSize: 12)),
-                    trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => JobDetailsScreen(
-                            jobId: sim.id,
-                            jobRepo: widget.jobRepo,
-                            appRepo: widget.appRepo,
-                            profRepo: widget.profRepo,
-                          ),
-                        ),
-                      );
-                    },
+            ..._similarJobs.map(
+              (sim) => Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
                   ),
-                )),
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFE2E8F0),
+                    child: Icon(Icons.work, color: Color(0xFF0D6B4F), size: 18),
+                  ),
+                  title: Text(
+                    sim.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${sim.location} • ${sim.employmentType}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => JobDetailsScreen(
+                          jobId: sim.id,
+                          jobRepo: widget.jobRepo,
+                          appRepo: widget.appRepo,
+                          profRepo: widget.profRepo,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
           ],
         ],
@@ -1107,7 +1841,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       bg = const Color(0xFFECFDF5);
       fg = const Color(0xFF065F46);
       icon = Icons.check_circle_outline;
-      text = '📅 Active recruitment: $daysRemaining days until deadline (${_job!.deadline})';
+      text =
+          '📅 Active recruitment: $daysRemaining days until deadline (${_job!.deadline})';
     }
 
     return Container(
@@ -1123,7 +1858,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 12),
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
             ),
           ),
         ],
@@ -1144,7 +1883,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       decoration: BoxDecoration(
         color: color ?? const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(8),
-        border: onTap != null ? Border.all(color: const Color(0xFF0D6B4F).withOpacity(0.3)) : null,
+        border: onTap != null
+            ? Border.all(color: const Color(0xFF0D6B4F).withOpacity(0.3))
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

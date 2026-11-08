@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
@@ -92,21 +93,29 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     });
     final keyword = _searchController.text.trim();
     final location = _locationController.text.trim();
-    final type = (_selectedType == 'All' || _selectedType == null) ? null : _selectedType;
+    final type = (_selectedType == 'All' || _selectedType == null)
+        ? null
+        : _selectedType;
     final category = (_selectedCategory == 'All') ? null : _selectedCategory;
 
-    final results = await widget.jobRepo.getJobs(
-      keyword: keyword.isNotEmpty ? keyword : null,
-      location: location.isNotEmpty ? location : null,
-      employmentType: type,
-      category: category,
-    );
+    try {
+      final results = await widget.jobRepo.getJobs(
+        keyword: keyword.isNotEmpty ? keyword : null,
+        location: location.isNotEmpty ? location : null,
+        employmentType: type,
+        category: category,
+      );
 
-    if (mounted) {
-      setState(() {
-        _jobs = results;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _jobs = results;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -188,34 +197,51 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: _titleSuggestions.map((suggestion) {
-                        final catData = EthiopianJobCatalogue.findCategoryForTitle(suggestion);
+                        final catData =
+                            EthiopianJobCatalogue.findCategoryForTitle(
+                              suggestion,
+                            );
                         return InkWell(
                           onTap: () {
                             _searchController.text = suggestion;
                             setState(() {
                               _showSuggestions = false;
-                              if (catData != null && _selectedCategory == 'All') {
+                              if (catData != null &&
+                                  _selectedCategory == 'All') {
                                 _selectedCategory = catData.name;
                               }
                             });
                             _performSearch();
                           },
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
                             child: Row(
                               children: [
-                                Icon(catData?.icon ?? Icons.work_outline, size: 16, color: const Color(0xFF0D6B4F)),
+                                Icon(
+                                  catData?.icon ?? Icons.work_outline,
+                                  size: 16,
+                                  color: const Color(0xFF0D6B4F),
+                                ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     suggestion,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                                 if (catData != null)
                                   Text(
                                     catData.name,
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF64748B),
+                                    ),
                                   ),
                               ],
                             ),
@@ -233,8 +259,14 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                         controller: _locationController,
                         decoration: InputDecoration(
                           hintText: loc.t('location'),
-                          prefixIcon: const Icon(Icons.location_on_outlined, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          prefixIcon: const Icon(
+                            Icons.location_on_outlined,
+                            size: 20,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         onSubmitted: (_) => _performSearch(),
                       ),
@@ -243,12 +275,24 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _selectedType,
-                        hint: Text(loc.t('employment_type'), style: const TextStyle(fontSize: 12)),
+                        hint: Text(
+                          loc.t('employment_type'),
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         decoration: const InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                         ),
                         items: _employmentTypes.map((t) {
-                          return DropdownMenuItem(value: t, child: Text(t, style: const TextStyle(fontSize: 13)));
+                          return DropdownMenuItem(
+                            value: t,
+                            child: Text(
+                              t,
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          );
                         }).toList(),
                         onChanged: (val) {
                           setState(() => _selectedType = val);
@@ -281,8 +325,12 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                     checkmarkColor: const Color(0xFF0D6B4F),
                     labelStyle: TextStyle(
                       fontSize: 12,
-                      fontWeight: _selectedCategory == 'All' ? FontWeight.bold : FontWeight.normal,
-                      color: _selectedCategory == 'All' ? const Color(0xFF0D6B4F) : const Color(0xFF334155),
+                      fontWeight: _selectedCategory == 'All'
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: _selectedCategory == 'All'
+                          ? const Color(0xFF0D6B4F)
+                          : const Color(0xFF334155),
                     ),
                     onSelected: (selected) {
                       setState(() => _selectedCategory = 'All');
@@ -297,17 +345,29 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                     padding: const EdgeInsets.only(right: 6),
                     child: FilterChip(
                       label: Text('${cat.name} (${cat.titles.length})'),
-                      avatar: Icon(cat.icon, size: 14, color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF64748B)),
+                      avatar: Icon(
+                        cat.icon,
+                        size: 14,
+                        color: isSelected
+                            ? const Color(0xFF0D6B4F)
+                            : const Color(0xFF64748B),
+                      ),
                       selected: isSelected,
                       selectedColor: const Color(0xFF0D6B4F).withOpacity(0.18),
                       checkmarkColor: const Color(0xFF0D6B4F),
                       labelStyle: TextStyle(
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF334155),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isSelected
+                            ? const Color(0xFF0D6B4F)
+                            : const Color(0xFF334155),
                       ),
                       onSelected: (selected) {
-                        setState(() => _selectedCategory = selected ? cat.name : 'All');
+                        setState(
+                          () => _selectedCategory = selected ? cat.name : 'All',
+                        );
                         _performSearch();
                       },
                     ),
@@ -323,70 +383,76 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _jobs.isEmpty
-                    ? EmptyStateWidget(
-                        icon: Icons.work_off_outlined,
-                        title: loc.t('no_jobs_found'),
-                        subtitle: 'No jobs found matching your category and filter criteria. Try adjusting keywords.',
-                        actionLabel: 'Reset Filters',
-                        onAction: _clearFilters,
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _performSearch,
-                        child: ListView.builder(
-                          itemCount: _jobs.length + (_jobs.length >= 2 ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index == 2 && _jobs.length >= 2) {
-                              return const AdvertisementBannerCarousel(
-                                placement: 'job_list',
-                                layoutType: BannerLayoutType.inline,
-                                height: 95,
-                              );
-                            }
-                            final jobIndex = (_jobs.length >= 2 && index > 2) ? index - 1 : index;
-                            if (jobIndex >= _jobs.length) {
-                              return const SizedBox.shrink();
-                            }
-                            final job = _jobs[jobIndex];
-                            return JobCard(
-                              job: job,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => JobDetailsScreen(
-                                      jobId: job.id,
-                                      jobRepo: widget.jobRepo,
-                                      appRepo: widget.appRepo,
-                                      profRepo: widget.profRepo,
-                                    ),
-                                  ),
-                                ).then((_) => _performSearch());
-                              },
-                              onSaveToggle: () async {
-                                final newSaved = !job.isSaved;
-                                setState(() {
-                                  final idx = _jobs.indexWhere((j) => j.id == job.id);
-                                  if (idx != -1) {
-                                    _jobs[idx] = _jobs[idx].copyWith(isSaved: newSaved);
-                                  }
-                                });
-                                if (newSaved) {
-                                  await widget.jobRepo.saveJob(job.id);
-                                } else {
-                                  await widget.jobRepo.unsaveJob(job.id);
-                                }
-                              },
-                              onMatchTap: job.matchDetails != null
-                                  ? () => MatchDetailDialog.show(
-                                        context,
-                                        job.title,
-                                        job.matchDetails!,
-                                      )
-                                  : null,
-                            );
+                ? EmptyStateWidget(
+                    icon: Icons.work_off_outlined,
+                    title: loc.t('no_jobs_found'),
+                    subtitle: 'No jobs found matching your category and filter criteria. Try adjusting keywords.',
+                    actionLabel: 'Reset Filters',
+                    onAction: _clearFilters,
+                  )
+                : RefreshIndicator(
+                    onRefresh: _performSearch,
+                    child: ListView.builder(
+                      itemCount: _jobs.length + (_jobs.length >= 2 ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == 2 && _jobs.length >= 2) {
+                          return const AdvertisementBannerCarousel(
+                            placement: 'job_list',
+                            layoutType: BannerLayoutType.inline,
+                            height: 95,
+                          );
+                        }
+                        final jobIndex = (_jobs.length >= 2 && index > 2)
+                            ? index - 1
+                            : index;
+                        if (jobIndex >= _jobs.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final job = _jobs[jobIndex];
+                        return JobCard(
+                          job: job,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => JobDetailsScreen(
+                                  jobId: job.id,
+                                  jobRepo: widget.jobRepo,
+                                  appRepo: widget.appRepo,
+                                  profRepo: widget.profRepo,
+                                ),
+                              ),
+                            ).then((_) => _performSearch());
                           },
-                        ),
-                      ),
+                          onSaveToggle: () async {
+                            final newSaved = !job.isSaved;
+                            setState(() {
+                              final idx = _jobs.indexWhere(
+                                (j) => j.id == job.id,
+                              );
+                              if (idx != -1) {
+                                _jobs[idx] = _jobs[idx].copyWith(
+                                  isSaved: newSaved,
+                                );
+                              }
+                            });
+                            if (newSaved) {
+                              await widget.jobRepo.saveJob(job.id);
+                            } else {
+                              await widget.jobRepo.unsaveJob(job.id);
+                            }
+                          },
+                          onMatchTap: job.matchDetails != null
+                              ? () => MatchDetailDialog.show(
+                                  context,
+                                  job.title,
+                                  job.matchDetails!,
+                                )
+                              : null,
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       ),

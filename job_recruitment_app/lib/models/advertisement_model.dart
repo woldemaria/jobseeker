@@ -150,21 +150,27 @@ class AdvertisementModel {
   }
 
   String? getSubtitle(String languageCode) {
-    if (languageCode == 'am' && subtitleAm != null && subtitleAm!.trim().isNotEmpty) {
+    if (languageCode == 'am' &&
+        subtitleAm != null &&
+        subtitleAm!.trim().isNotEmpty) {
       return subtitleAm;
     }
     return subtitle;
   }
 
   String? getBadge(String languageCode) {
-    if (languageCode == 'am' && badgeTextAm != null && badgeTextAm!.trim().isNotEmpty) {
+    if (languageCode == 'am' &&
+        badgeTextAm != null &&
+        badgeTextAm!.trim().isNotEmpty) {
       return badgeTextAm;
     }
     return badgeText;
   }
 
   String getCta(String languageCode) {
-    if (languageCode == 'am' && ctaTextAm != null && ctaTextAm!.trim().isNotEmpty) {
+    if (languageCode == 'am' &&
+        ctaTextAm != null &&
+        ctaTextAm!.trim().isNotEmpty) {
       return ctaTextAm!;
     }
     return ctaText;

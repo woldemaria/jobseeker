@@ -1,6 +1,8 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../services/map_service.dart';
 
 class LocationMapModal extends StatefulWidget {
@@ -51,14 +53,16 @@ class _LocationMapModalState extends State<LocationMapModal> {
   PlaceProfile? _placeProfile;
   bool _isLoading = true;
   bool _isSearching = false;
-  int _activeTab = 0; // 0: Google Maps & Place, 1: OpenStreetMap, 2: Place Photo
+  int _activeTab =
+      0; // 0: Google Maps & Place, 1: OpenStreetMap, 2: Place Photo
   int _zoom = 15;
   List<MapLocationResult> _searchResults = [];
 
   @override
   void initState() {
     super.initState();
-    final initialQuery = widget.organizationName != null && widget.organizationName!.isNotEmpty
+    final initialQuery =
+        widget.organizationName != null && widget.organizationName!.isNotEmpty
         ? '${widget.organizationName}, ${widget.address}'
         : widget.address;
     _searchController = TextEditingController(text: initialQuery);
@@ -84,7 +88,10 @@ class _LocationMapModalState extends State<LocationMapModal> {
 
     final geocodeFuture = _location != null
         ? Future.value(_location)
-        : MapService.geocode(widget.address, organizationName: widget.organizationName);
+        : MapService.geocode(
+            widget.address,
+            organizationName: widget.organizationName,
+          );
 
     final profileFuture = MapService.getPlaceProfile(
       widget.address,
@@ -122,7 +129,9 @@ class _LocationMapModalState extends State<LocationMapModal> {
       if (results.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Could not find "$clean". Showing closest Ethiopian location.'),
+            content: Text(
+              'Could not find "$clean". Showing closest Ethiopian location.',
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -134,7 +143,8 @@ class _LocationMapModalState extends State<LocationMapModal> {
     final n = pow(2, zoom).toInt();
     final x = (((lon + 180) / 360) * n).floor();
     final latRad = lat * pi / 180;
-    final y = (((1 - (log(tan(latRad) + (1 / cos(latRad))) / pi)) / 2) * n).floor();
+    final y = (((1 - (log(tan(latRad) + (1 / cos(latRad))) / pi)) / 2) * n)
+        .floor();
     return 'https://tile.openstreetmap.org/$zoom/$x/$y.png';
   }
 
@@ -191,7 +201,11 @@ class _LocationMapModalState extends State<LocationMapModal> {
                     color: const Color(0xFF0D6B4F).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.location_on, color: Color(0xFF0D6B4F), size: 28),
+                  child: const Icon(
+                    Icons.location_on,
+                    color: Color(0xFF0D6B4F),
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -200,21 +214,33 @@ class _LocationMapModalState extends State<LocationMapModal> {
                     children: [
                       Text(
                         widget.title,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (widget.organizationName != null && widget.organizationName!.isNotEmpty) ...[
+                      if (widget.organizationName != null &&
+                          widget.organizationName!.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
                           widget.organizationName!,
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF0D6B4F), fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF0D6B4F),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 2),
                       Text(
                         widget.address,
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF475569),
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -245,13 +271,20 @@ class _LocationMapModalState extends State<LocationMapModal> {
                     child: TextField(
                       controller: _searchController,
                       decoration: const InputDecoration(
-                        hintText: 'Search exact place, building, or landmark...',
-                        hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                        hintText:
+                            'Search exact place, building, or landmark...',
+                        hintStyle: TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF94A3B8),
+                        ),
                         border: InputBorder.none,
                         isDense: true,
                         contentPadding: EdgeInsets.symmetric(vertical: 10),
                       ),
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF0F172A),
+                      ),
                       onSubmitted: _performSearch,
                     ),
                   ),
@@ -261,12 +294,19 @@ class _LocationMapModalState extends State<LocationMapModal> {
                       child: SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D6B4F)),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF0D6B4F),
+                        ),
                       ),
                     )
                   else
                     IconButton(
-                      icon: const Icon(Icons.arrow_forward, size: 18, color: Color(0xFF0D6B4F)),
+                      icon: const Icon(
+                        Icons.arrow_forward,
+                        size: 18,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       tooltip: 'Locate Exact Place',
                       onPressed: () => _performSearch(_searchController.text),
                     ),
@@ -283,7 +323,10 @@ class _LocationMapModalState extends State<LocationMapModal> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: Colors.grey.shade300),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 6,
+                    ),
                   ],
                 ),
                 child: ListView.separated(
@@ -294,8 +337,15 @@ class _LocationMapModalState extends State<LocationMapModal> {
                     final item = _searchResults[idx];
                     return ListTile(
                       dense: true,
-                      leading: const Icon(Icons.pin_drop, size: 16, color: Color(0xFF0D6B4F)),
-                      title: Text(item.displayName, style: const TextStyle(fontSize: 12)),
+                      leading: const Icon(
+                        Icons.pin_drop,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
+                      title: Text(
+                        item.displayName,
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       onTap: () {
                         setState(() {
                           _location = item;
@@ -321,7 +371,11 @@ class _LocationMapModalState extends State<LocationMapModal> {
                 children: [
                   _buildTabButton(0, 'Google Maps', Icons.public),
                   _buildTabButton(1, 'OpenStreetMap', Icons.map_outlined),
-                  _buildTabButton(2, 'Place Photo', Icons.photo_camera_outlined),
+                  _buildTabButton(
+                    2,
+                    'Place Photo',
+                    Icons.photo_camera_outlined,
+                  ),
                 ],
               ),
             ),
@@ -340,7 +394,11 @@ class _LocationMapModalState extends State<LocationMapModal> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3)),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
                   ],
                 ),
                 child: Column(
@@ -349,7 +407,10 @@ class _LocationMapModalState extends State<LocationMapModal> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFF10B981).withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
@@ -358,9 +419,20 @@ class _LocationMapModalState extends State<LocationMapModal> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check_circle, color: Color(0xFF10B981), size: 13),
+                              Icon(
+                                Icons.check_circle,
+                                color: Color(0xFF10B981),
+                                size: 13,
+                              ),
                               SizedBox(width: 4),
-                              Text('Exact Place Verified', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold)),
+                              Text(
+                                'Exact Place Verified',
+                                style: TextStyle(
+                                  color: Color(0xFF10B981),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -368,21 +440,35 @@ class _LocationMapModalState extends State<LocationMapModal> {
                         if (lat != null && lon != null)
                           Text(
                             'GPS: ${lat.toStringAsFixed(4)}°, ${lon.toStringAsFixed(4)}°',
-                            style: const TextStyle(color: Colors.white70, fontSize: 11, fontFamily: 'monospace'),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                            ),
                           ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      MapService.buildExactPlaceQuery(widget.address, organizationName: widget.organizationName),
-                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      MapService.buildExactPlaceQuery(
+                        widget.address,
+                        organizationName: widget.organizationName,
+                      ),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
                       activeAddress,
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -400,16 +486,26 @@ class _LocationMapModalState extends State<LocationMapModal> {
                             lon: lon,
                           );
                         },
-                        icon: const Icon(Icons.travel_explore, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.travel_explore,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         label: const Text(
                           'Find Exact Place on Google Maps',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1E88E5),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -427,16 +523,26 @@ class _LocationMapModalState extends State<LocationMapModal> {
                             lon: lon,
                           );
                         },
-                        icon: const Icon(Icons.directions, color: Colors.white, size: 18),
+                        icon: const Icon(
+                          Icons.directions,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         label: const Text(
                           'Get Turn-by-Turn Directions',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0D6B4F),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
                       ),
                     ),
@@ -460,9 +566,18 @@ class _LocationMapModalState extends State<LocationMapModal> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF0D6B4F)),
+                            CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFF0D6B4F),
+                            ),
                             SizedBox(height: 8),
-                            Text('Locating place on OpenStreetMap...', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                            Text(
+                              'Locating place on OpenStreetMap...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
                           ],
                         ),
                       )
@@ -473,13 +588,21 @@ class _LocationMapModalState extends State<LocationMapModal> {
                               child: Image.network(
                                 _getOsmTileUrl(lat, lon, _zoom),
                                 fit: BoxFit.cover,
-                                headers: const {'User-Agent': 'JobSeekerEthiopiaRecruitmentApp/1.0'},
-                                errorBuilder: (context, error, stackTrace) => Container(
-                                  color: const Color(0xFFF1F5F9),
-                                  child: const Center(
-                                    child: Icon(Icons.map_outlined, size: 48, color: Color(0xFF94A3B8)),
-                                  ),
-                                ),
+                                headers: const {
+                                  'User-Agent':
+                                      'JobSeekerEthiopiaRecruitmentApp/1.0',
+                                },
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: const Color(0xFFF1F5F9),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.map_outlined,
+                                          size: 48,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ),
                               ),
                             ),
                           // Center Pin
@@ -488,20 +611,34 @@ class _LocationMapModalState extends State<LocationMapModal> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
-                                      BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 6),
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.18),
+                                        blurRadius: 6,
+                                      ),
                                     ],
                                   ),
                                   child: Text(
                                     widget.address,
-                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
                                   ),
                                 ),
-                                const Icon(Icons.location_pin, color: Color(0xFFDC2626), size: 36),
+                                const Icon(
+                                  Icons.location_pin,
+                                  color: Color(0xFFDC2626),
+                                  size: 36,
+                                ),
                               ],
                             ),
                           ),
@@ -517,21 +654,37 @@ class _LocationMapModalState extends State<LocationMapModal> {
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.95),
-                                      borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(6),
+                                      ),
                                     ),
-                                    child: const Icon(Icons.add, size: 18, color: Color(0xFF0F172A)),
+                                    child: const Icon(
+                                      Icons.add,
+                                      size: 18,
+                                      color: Color(0xFF0F172A),
+                                    ),
                                   ),
                                 ),
-                                Container(height: 1, width: 30, color: Colors.grey.shade300),
+                                Container(
+                                  height: 1,
+                                  width: 30,
+                                  color: Colors.grey.shade300,
+                                ),
                                 InkWell(
                                   onTap: _zoomOut,
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.95),
-                                      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(6)),
+                                      borderRadius: const BorderRadius.vertical(
+                                        bottom: Radius.circular(6),
+                                      ),
                                     ),
-                                    child: const Icon(Icons.remove, size: 18, color: Color(0xFF0F172A)),
+                                    child: const Icon(
+                                      Icons.remove,
+                                      size: 18,
+                                      color: Color(0xFF0F172A),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -543,10 +696,17 @@ class _LocationMapModalState extends State<LocationMapModal> {
                             left: 8,
                             child: InkWell(
                               onTap: () {
-                                MapService.openOpenStreetMap(widget.address, lat: lat, lon: lon);
+                                MapService.openOpenStreetMap(
+                                  widget.address,
+                                  lat: lat,
+                                  lon: lon,
+                                );
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF0D6B4F),
                                   borderRadius: BorderRadius.circular(6),
@@ -554,9 +714,20 @@ class _LocationMapModalState extends State<LocationMapModal> {
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.open_in_new, color: Colors.white, size: 12),
+                                    Icon(
+                                      Icons.open_in_new,
+                                      color: Colors.white,
+                                      size: 12,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text('Open in OSM Web', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      'Open in OSM Web',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -584,13 +755,21 @@ class _LocationMapModalState extends State<LocationMapModal> {
                             child: Image.network(
                               _placeProfile!.imageUrl!,
                               fit: BoxFit.cover,
-                              headers: const {'User-Agent': 'JobSeekerEthiopiaRecruitmentApp/1.0'},
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: const Color(0xFF1E293B),
-                                child: const Center(
-                                  child: Icon(Icons.image_not_supported_outlined, size: 48, color: Colors.white54),
-                                ),
-                              ),
+                              headers: const {
+                                'User-Agent':
+                                    'JobSeekerEthiopiaRecruitmentApp/1.0',
+                              },
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: const Color(0xFF1E293B),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported_outlined,
+                                        size: 48,
+                                        color: Colors.white54,
+                                      ),
+                                    ),
+                                  ),
                             ),
                           ),
                           Positioned.fill(
@@ -599,7 +778,10 @@ class _LocationMapModalState extends State<LocationMapModal> {
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
-                                  colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                                  colors: [
+                                    Colors.transparent,
+                                    Colors.black.withOpacity(0.8),
+                                  ],
                                 ),
                               ),
                             ),
@@ -613,13 +795,20 @@ class _LocationMapModalState extends State<LocationMapModal> {
                               children: [
                                 Text(
                                   _placeProfile!.name,
-                                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 if (_placeProfile!.description != null) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     _placeProfile!.description!,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 11,
+                                    ),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -630,7 +819,10 @@ class _LocationMapModalState extends State<LocationMapModal> {
                         ],
                       )
                     : const Center(
-                        child: Text('Place photo not available for this address.', style: TextStyle(color: Colors.white70)),
+                        child: Text(
+                          'Place photo not available for this address.',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ),
               ),
             ],
@@ -647,15 +839,28 @@ class _LocationMapModalState extends State<LocationMapModal> {
                           : widget.address;
                       Clipboard.setData(ClipboardData(text: textToCopy));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Address & GPS coordinates copied to clipboard!')),
+                        const SnackBar(
+                          content: Text(
+                            'Address & GPS coordinates copied to clipboard!',
+                          ),
+                        ),
                       );
                     },
-                    icon: const Icon(Icons.copy, size: 14, color: Color(0xFF475569)),
-                    label: const Text('Copy GPS', style: TextStyle(fontSize: 12, color: Color(0xFF334155))),
+                    icon: const Icon(
+                      Icons.copy,
+                      size: 14,
+                      color: Color(0xFF475569),
+                    ),
+                    label: const Text(
+                      'Copy GPS',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       side: const BorderSide(color: Color(0xFFCBD5E1)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -670,12 +875,21 @@ class _LocationMapModalState extends State<LocationMapModal> {
                         lon: lon,
                       );
                     },
-                    icon: const Icon(Icons.open_in_browser, size: 14, color: Color(0xFF1E88E5)),
-                    label: const Text('Google Maps', style: TextStyle(fontSize: 12, color: Color(0xFF1E88E5))),
+                    icon: const Icon(
+                      Icons.open_in_browser,
+                      size: 14,
+                      color: Color(0xFF1E88E5),
+                    ),
+                    label: const Text(
+                      'Google Maps',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF1E88E5)),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       side: const BorderSide(color: Color(0xFF90CAF9)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -683,14 +897,27 @@ class _LocationMapModalState extends State<LocationMapModal> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      MapService.openOpenStreetMap(widget.address, lat: lat, lon: lon);
+                      MapService.openOpenStreetMap(
+                        widget.address,
+                        lat: lat,
+                        lon: lon,
+                      );
                     },
-                    icon: const Icon(Icons.map, size: 14, color: Color(0xFF0D6B4F)),
-                    label: const Text('OSM Web', style: TextStyle(fontSize: 12, color: Color(0xFF0D6B4F))),
+                    icon: const Icon(
+                      Icons.map,
+                      size: 14,
+                      color: Color(0xFF0D6B4F),
+                    ),
+                    label: const Text(
+                      'OSM Web',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF0D6B4F)),
+                    ),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       side: const BorderSide(color: Color(0xFFA7F3D0)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                 ),
@@ -714,7 +941,12 @@ class _LocationMapModalState extends State<LocationMapModal> {
             color: isSelected ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             boxShadow: isSelected
-                ? [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 4)]
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 4,
+                    ),
+                  ]
                 : null,
           ),
           alignment: Alignment.center,
@@ -724,7 +956,9 @@ class _LocationMapModalState extends State<LocationMapModal> {
               Icon(
                 icon,
                 size: 15,
-                color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF64748B),
+                color: isSelected
+                    ? const Color(0xFF0D6B4F)
+                    : const Color(0xFF64748B),
               ),
               const SizedBox(width: 5),
               Text(
@@ -732,7 +966,9 @@ class _LocationMapModalState extends State<LocationMapModal> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF64748B),
+                  color: isSelected
+                      ? const Color(0xFF0D6B4F)
+                      : const Color(0xFF64748B),
                 ),
               ),
             ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
@@ -57,12 +58,18 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
 
   Future<void> _fetchRecommendations() async {
     setState(() => _isLoading = true);
-    final results = await widget.jobRepo.getRecommendations();
-    if (mounted) {
-      setState(() {
-        _recommendations = results;
-        _isLoading = false;
-      });
+    try {
+      final results = await widget.jobRepo.getRecommendations();
+      if (mounted) {
+        setState(() {
+          _recommendations = results;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -71,8 +78,12 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       // Keyword search filter (title, employer, skills)
       if (_searchQuery.isNotEmpty) {
         final titleMatch = job.title.toLowerCase().contains(_searchQuery);
-        final employerMatch = (job.employer?.organizationName ?? '').toLowerCase().contains(_searchQuery);
-        final skillMatch = job.skills.any((s) => s.name.toLowerCase().contains(_searchQuery));
+        final employerMatch = (job.employer?.organizationName ?? '')
+            .toLowerCase()
+            .contains(_searchQuery);
+        final skillMatch = job.skills.any(
+          (s) => s.name.toLowerCase().contains(_searchQuery),
+        );
         final locMatch = job.location.toLowerCase().contains(_searchQuery);
         if (!titleMatch && !employerMatch && !skillMatch && !locMatch) {
           return false;
@@ -82,7 +93,10 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       // Employment type filter
       if (_selectedEmploymentType != 'all') {
         final jobType = job.employmentType.toLowerCase().replaceAll('-', '_');
-        final filterType = _selectedEmploymentType.toLowerCase().replaceAll('-', '_');
+        final filterType = _selectedEmploymentType.toLowerCase().replaceAll(
+          '-',
+          '_',
+        );
         if (!jobType.contains(filterType) && !filterType.contains(jobType)) {
           return false;
         }
@@ -168,274 +182,355 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _recommendations.isEmpty
-              ? EmptyStateWidget(
-                  icon: Icons.psychology_outlined,
-                  title: 'No Recommendations Yet',
-                  subtitle:
-                      'Add your professional skills, work experiences, and education records to generate multi-criteria AI job recommendations.',
-                  actionLabel: 'Add Skills & Complete Profile',
-                  onAction: _openSkillsManagement,
-                )
-              : RefreshIndicator(
-                  onRefresh: _fetchRecommendations,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    children: [
-                      // Multi-Criteria Explanation Banner
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D6B4F).withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFF0D6B4F).withOpacity(0.2)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0D6B4F).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.auto_awesome, color: Color(0xFF0D6B4F), size: 18),
-                            ),
-                            const SizedBox(width: 10),
-                            const Expanded(
-                              child: Text(
-                                'Ranked with multi-criteria AI matching: Skills (40%), Education (20%), Experience (15%), Location (10%), Type (10%).',
-                                style: TextStyle(fontSize: 12, color: Color(0xFF0F5132), height: 1.3),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: _openSkillsManagement,
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                              ),
-                              child: const Text('Edit Skills', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D6B4F))),
-                            ),
-                          ],
-                        ),
+          ? EmptyStateWidget(
+              icon: Icons.psychology_outlined,
+              title: 'No Recommendations Yet',
+              subtitle: 'Add your professional skills, work experiences, and education records to generate multi-criteria AI job recommendations.',
+              actionLabel: 'Add Skills & Complete Profile',
+              onAction: _openSkillsManagement,
+            )
+          : RefreshIndicator(
+              onRefresh: _fetchRecommendations,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  // Multi-Criteria Explanation Banner
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D6B4F).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF0D6B4F).withOpacity(0.2),
                       ),
-
-                      // Search Bar in Recommendations
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search recommendations by title, skill, company...',
-                            prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFF0D6B4F)),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 18),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                    },
-                                  )
-                                : null,
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF0D6B4F), width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D6B4F).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.auto_awesome,
+                            color: Color(0xFF0D6B4F),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Ranked with multi-criteria AI matching: Skills (40%), Education (20%), Experience (15%), Location (10%), Type (10%).',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF0F5132),
+                              height: 1.3,
                             ),
                           ),
                         ),
-                      ),
-
-                      // Sort Bar & Recommendation Count
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${filtered.length} Curated Matches',
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text('Sort: ', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                                DropdownButton<String>(
-                                  value: _sortBy,
-                                  isDense: true,
-                                  underline: const SizedBox(),
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D6B4F)),
-                                  items: sortOptions.map((opt) {
-                                    return DropdownMenuItem<String>(
-                                      value: opt['key'],
-                                      child: Text(opt['label']!),
-                                    );
-                                  }).toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() => _sortBy = val);
-                                    }
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Employment Type Filter Chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        child: Row(
-                          children: employmentTypes.map((type) {
-                            final isSelected = _selectedEmploymentType == type['key'];
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: FilterChip(
-                                label: Text(
-                                  type['label']!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? Colors.white : const Color(0xFF334155),
-                                  ),
-                                ),
-                                selected: isSelected,
-                                selectedColor: const Color(0xFF0D6B4F),
-                                checkmarkColor: Colors.white,
-                                backgroundColor: const Color(0xFFF1F5F9),
-                                onSelected: (_) {
-                                  setState(() => _selectedEmploymentType = type['key']!);
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-
-                      // Score Threshold Filter Chips
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                        child: Row(
-                          children: scoreFilters.map((s) {
-                            final scoreVal = s['score'] as double;
-                            final isSelected = _minScore == scoreVal;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
-                                label: Text(
-                                  s['label'] as String,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? Colors.white : const Color(0xFF475569),
-                                  ),
-                                ),
-                                selected: isSelected,
-                                selectedColor: const Color(0xFF0F766E),
-                                backgroundColor: Colors.white,
-                                onSelected: (_) {
-                                  setState(() => _minScore = scoreVal);
-                                },
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 6),
-
-                      if (filtered.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Center(
-                            child: Column(
-                              children: [
-                                const Icon(Icons.filter_list_off, size: 40, color: Color(0xFF94A3B8)),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'No matching vacancies for these filters.',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-                                ),
-                                const SizedBox(height: 4),
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchController.clear();
-                                      _selectedEmploymentType = 'all';
-                                      _minScore = 0;
-                                    });
-                                  },
-                                  child: const Text('Reset All Filters'),
-                                ),
-                              ],
+                        TextButton(
+                          onPressed: _openSkillsManagement,
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: const Text(
+                            'Edit Skills',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0D6B4F),
                             ),
                           ),
-                        )
-                      else
-                        ...filtered.map((job) {
-                          return JobCard(
-                            job: job,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => JobDetailsScreen(
-                                    jobId: job.id,
-                                    jobRepo: widget.jobRepo,
-                                    appRepo: widget.appRepo,
-                                    profRepo: widget.profRepo,
-                                  ),
-                                ),
-                              ).then((_) => _fetchRecommendations());
-                            },
-                            onSaveToggle: () async {
-                              final newSaved = !job.isSaved;
-                              setState(() {
-                                final idx = _recommendations.indexWhere((j) => j.id == job.id);
-                                if (idx != -1) {
-                                  _recommendations[idx] = _recommendations[idx].copyWith(isSaved: newSaved);
-                                }
-                              });
-                              if (newSaved) {
-                                await widget.jobRepo.saveJob(job.id);
-                              } else {
-                                await widget.jobRepo.unsaveJob(job.id);
-                              }
-                            },
-                            onMatchTap: () async {
-                              if (job.matchDetails != null) {
-                                MatchDetailDialog.show(
-                                  context,
-                                  job.title,
-                                  job.matchDetails!,
-                                );
-                              } else {
-                                final details = await widget.jobRepo.getMatchDetails(job.id);
-                                if (details != null && mounted) {
-                                  MatchDetailDialog.show(
-                                    context,
-                                    job.title,
-                                    details,
-                                  );
-                                }
-                              }
-                            },
-                          );
-                        }),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+
+                  // Search Bar in Recommendations
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search recommendations by title, skill, company...',
+                        prefixIcon: const Icon(
+                          Icons.search,
+                          size: 20,
+                          color: Color(0xFF0D6B4F),
+                        ),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                          horizontal: 14,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF0D6B4F),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Sort Bar & Recommendation Count
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${filtered.length} Curated Matches',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF334155),
+                          ),
+                        ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Sort: ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF64748B),
+                              ),
+                            ),
+                            DropdownButton<String>(
+                              value: _sortBy,
+                              isDense: true,
+                              underline: const SizedBox(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0D6B4F),
+                              ),
+                              items: sortOptions.map((opt) {
+                                return DropdownMenuItem<String>(
+                                  value: opt['key'],
+                                  child: Text(opt['label']!),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _sortBy = val);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Employment Type Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    child: Row(
+                      children: employmentTypes.map((type) {
+                        final isSelected =
+                            _selectedEmploymentType == type['key'];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: FilterChip(
+                            label: Text(
+                              type['label']!,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF334155),
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF0D6B4F),
+                            checkmarkColor: Colors.white,
+                            backgroundColor: const Color(0xFFF1F5F9),
+                            onSelected: (_) {
+                              setState(
+                                () => _selectedEmploymentType = type['key']!,
+                              );
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  // Score Threshold Filter Chips
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    child: Row(
+                      children: scoreFilters.map((s) {
+                        final scoreVal = s['score'] as double;
+                        final isSelected = _minScore == scoreVal;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(
+                              s['label'] as String,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF475569),
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedColor: const Color(0xFF0F766E),
+                            backgroundColor: Colors.white,
+                            onSelected: (_) {
+                              setState(() => _minScore = scoreVal);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  if (filtered.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.filter_list_off,
+                              size: 40,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'No matching vacancies for these filters.',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF475569),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _searchController.clear();
+                                  _selectedEmploymentType = 'all';
+                                  _minScore = 0;
+                                });
+                              },
+                              child: const Text('Reset All Filters'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ...filtered.map((job) {
+                      return JobCard(
+                        job: job,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => JobDetailsScreen(
+                                jobId: job.id,
+                                jobRepo: widget.jobRepo,
+                                appRepo: widget.appRepo,
+                                profRepo: widget.profRepo,
+                              ),
+                            ),
+                          ).then((_) => _fetchRecommendations());
+                        },
+                        onSaveToggle: () async {
+                          final newSaved = !job.isSaved;
+                          setState(() {
+                            final idx = _recommendations.indexWhere(
+                              (j) => j.id == job.id,
+                            );
+                            if (idx != -1) {
+                              _recommendations[idx] = _recommendations[idx]
+                                  .copyWith(isSaved: newSaved);
+                            }
+                          });
+                          if (newSaved) {
+                            await widget.jobRepo.saveJob(job.id);
+                          } else {
+                            await widget.jobRepo.unsaveJob(job.id);
+                          }
+                        },
+                        onMatchTap: () async {
+                          if (job.matchDetails != null) {
+                            MatchDetailDialog.show(
+                              context,
+                              job.title,
+                              job.matchDetails!,
+                            );
+                          } else {
+                            final details = await widget.jobRepo
+                                .getMatchDetails(job.id);
+                            if (details != null && mounted) {
+                              MatchDetailDialog.show(
+                                context,
+                                job.title,
+                                details,
+                              );
+                            }
+                          }
+                        },
+                      );
+                    }),
+                ],
+              ),
+            ),
     );
   }
 }

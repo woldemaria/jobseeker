@@ -84,6 +84,11 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    public function jobAlerts()
+    {
+        return $this->hasMany(JobAlert::class);
+    }
+
     public function readNotifications()
     {
         return $this->notifications()->where('is_read', true);
@@ -107,5 +112,15 @@ class User extends Authenticatable
     public function auditLogs()
     {
         return $this->hasMany(AuditLog::class);
+    }
+
+    public function adsConsent()
+    {
+        return $this->hasOne(AdsConsent::class);
+    }
+
+    public function adsConsentHistories()
+    {
+        return $this->hasMany(AdsConsentHistory::class);
     }
 }

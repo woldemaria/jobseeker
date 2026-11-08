@@ -1,12 +1,20 @@
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import '../../services/auth_service.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
 import '../../services/api_service.dart';
 import '../../l10n/app_localizations.dart';
+
+import 'package:provider/provider.dart';
+
+import '../../repositories/admin_repository.dart';
+import '../../repositories/advertisement_repository.dart';
+import '../admin/admin_main_screen.dart';
 import '../job_seeker/job_seeker_main_screen.dart';
 import '../employer/employer_main_screen.dart';
 
@@ -91,7 +99,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           left: 20,
@@ -108,12 +118,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: 36,
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-            const Text('Choose Profile Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Choose Profile Photo',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 6),
-            const Text('Select a file from your disk or choose an avatar below:', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+            const Text(
+              'Select a file from your disk or choose an avatar below:',
+              style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            ),
             const SizedBox(height: 14),
 
             // Pick from Disk Button
@@ -151,7 +170,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Or select a curated professional avatar:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+            const Text(
+              'Or select a curated professional avatar:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF64748B),
+              ),
+            ),
             const SizedBox(height: 10),
 
             // Avatars Grid
@@ -179,10 +205,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isSelected ? const Color(0xFF0D6B4F) : Colors.grey.shade300,
+                        color: isSelected
+                            ? const Color(0xFF0D6B4F)
+                            : Colors.grey.shade300,
                         width: isSelected ? 2.5 : 1,
                       ),
-                      color: isSelected ? const Color(0xFF0D6B4F).withOpacity(0.08) : Colors.white,
+                      color: isSelected
+                          ? const Color(0xFF0D6B4F).withOpacity(0.08)
+                          : Colors.white,
                     ),
                     padding: const EdgeInsets.all(6),
                     child: Column(
@@ -197,8 +227,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           avatar['name']!,
                           style: TextStyle(
                             fontSize: 10,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF334155),
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? const Color(0xFF0D6B4F)
+                                : const Color(0xFF334155),
                           ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -239,8 +273,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     setState(() => _selectedProfilePhoto = null);
                     Navigator.pop(ctx);
                   },
-                  icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 16),
-                  label: const Text('Remove Photo', style: TextStyle(color: Color(0xFFDC2626))),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    color: Color(0xFFDC2626),
+                    size: 16,
+                  ),
+                  label: const Text(
+                    'Remove Photo',
+                    style: TextStyle(color: Color(0xFFDC2626)),
+                  ),
                 ),
               ),
           ],
@@ -293,7 +334,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (resp.success && widget.authService.currentUser != null) {
-        if (_selectedRole == 'employer') {
+        final user = widget.authService.currentUser!;
+        if (user.isAdmin) {
+          final adminRepo = Provider.of<AdminRepository>(
+            context,
+            listen: false,
+          );
+          final adRepo = Provider.of<AdvertisementRepository>(
+            context,
+            listen: false,
+          );
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminMainScreen(
+                adminRepo: adminRepo,
+                adRepo: adRepo,
+                authService: widget.authService,
+              ),
+            ),
+            (route) => false,
+          );
+        } else if (user.isEmployer) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(
@@ -349,7 +411,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: const Color(0xFF0D6B4F).withOpacity(0.08),
-                        border: Border.all(color: const Color(0xFF0D6B4F), width: 2.5),
+                        border: Border.all(
+                          color: const Color(0xFF0D6B4F),
+                          width: 2.5,
+                        ),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.08),
@@ -365,12 +430,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fit: BoxFit.cover,
                             )
                           : _selectedProfilePhoto != null
-                              ? Image.network(
-                                  _selectedProfilePhoto!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 52, color: Color(0xFF0D6B4F)),
-                                )
-                              : const Icon(Icons.person, size: 52, color: Color(0xFF0D6B4F)),
+                          ? Image.network(
+                              _selectedProfilePhoto!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    Icons.person,
+                                    size: 52,
+                                    color: Color(0xFF0D6B4F),
+                                  ),
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 52,
+                              color: Color(0xFF0D6B4F),
+                            ),
                     ),
                   ),
                   Positioned(
@@ -385,7 +459,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
@@ -395,8 +473,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 8),
             Center(
               child: Text(
-                _selectedProfilePhoto != null ? 'Profile Photo Selected (Tap to change)' : 'Add Profile Photo (Optional)',
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                _selectedProfilePhoto != null
+                    ? 'Profile Photo Selected (Tap to change)'
+                    : 'Add Profile Photo (Optional)',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -409,7 +493,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   color: const Color(0xFFFEE2E2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B))),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Color(0xFF991B1B)),
+                ),
               ),
 
             // Role selection Segmented Buttons
@@ -422,11 +509,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 Expanded(
                   child: ChoiceChip(
-                    label: Center(child: Text(loc.t('job_seeker'))),
+                    label: Center(
+                      child: Text(
+                        loc.t('job_seeker'),
+                        style: const TextStyle(fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     selected: _selectedRole == 'job_seeker',
                     selectedColor: const Color(0xFF0D6B4F).withOpacity(0.15),
                     labelStyle: TextStyle(
-                      color: _selectedRole == 'job_seeker' ? const Color(0xFF0D6B4F) : Colors.black87,
+                      color: _selectedRole == 'job_seeker'
+                          ? const Color(0xFF0D6B4F)
+                          : Colors.black87,
                       fontWeight: FontWeight.bold,
                     ),
                     onSelected: (val) {
@@ -434,18 +530,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 6),
                 Expanded(
                   child: ChoiceChip(
-                    label: Center(child: Text(loc.t('employer'))),
+                    label: Center(
+                      child: Text(
+                        loc.t('employer'),
+                        style: const TextStyle(fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                     selected: _selectedRole == 'employer',
                     selectedColor: const Color(0xFF0D6B4F).withOpacity(0.15),
                     labelStyle: TextStyle(
-                      color: _selectedRole == 'employer' ? const Color(0xFF0D6B4F) : Colors.black87,
+                      color: _selectedRole == 'employer'
+                          ? const Color(0xFF0D6B4F)
+                          : Colors.black87,
                       fontWeight: FontWeight.bold,
                     ),
                     onSelected: (val) {
                       if (val) setState(() => _selectedRole = 'employer');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: ChoiceChip(
+                    label: Center(
+                      child: Text(
+                        loc.t('administrator'),
+                        style: const TextStyle(fontSize: 11),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    selected: _selectedRole == 'administrator',
+                    selectedColor: const Color(0xFF0D6B4F).withOpacity(0.15),
+                    labelStyle: TextStyle(
+                      color: _selectedRole == 'administrator'
+                          ? const Color(0xFF0D6B4F)
+                          : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedRole = 'administrator');
                     },
                   ),
                 ),
@@ -486,8 +615,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 labelText: loc.t('password'),
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 ),
               ),
             ),
@@ -516,32 +648,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.badge_outlined, size: 18, color: Color(0xFF0D6B4F)),
+                        Icon(
+                          Icons.badge_outlined,
+                          size: 18,
+                          color: Color(0xFF0D6B4F),
+                        ),
                         SizedBox(width: 8),
-                        Text('Attach Resume / CV from Disk (Optional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(
+                          'Attach Resume / CV from Disk (Optional)',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Attach your PDF or DOCX resume directly from disk to complete your profile at registration.',
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey.shade600),
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     if (_pickedCvFilename != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0D6B4F).withOpacity(0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.check_circle, size: 18, color: Color(0xFF0D6B4F)),
+                            const Icon(
+                              Icons.check_circle,
+                              size: 18,
+                              color: Color(0xFF0D6B4F),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _pickedCvFilename!,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -550,7 +705,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 _pickedCvBytes = null;
                                 _pickedCvFilename = null;
                               }),
-                              child: const Icon(Icons.close, size: 18, color: Colors.red),
+                              child: const Icon(
+                                Icons.close,
+                                size: 18,
+                                color: Colors.red,
+                              ),
                             ),
                           ],
                         ),
@@ -573,12 +732,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Could not open file picker: $e')),
+                              SnackBar(
+                                content: Text('Could not open file picker: $e'),
+                              ),
                             );
                           }
                         },
                         icon: const Icon(Icons.upload_file, size: 16),
-                        label: const Text('Choose CV File from Disk (PDF / Word)'),
+                        label: const Text(
+                          'Choose CV File from Disk (PDF / Word)',
+                        ),
                       ),
                   ],
                 ),
@@ -592,7 +755,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : Text(loc.t('register')),
             ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../repositories/advertisement_repository.dart';
 import 'advertisement_management_screen.dart';
@@ -8,10 +9,12 @@ class AdvertisementAnalyticsScreen extends StatefulWidget {
   const AdvertisementAnalyticsScreen({super.key});
 
   @override
-  State<AdvertisementAnalyticsScreen> createState() => _AdvertisementAnalyticsScreenState();
+  State<AdvertisementAnalyticsScreen> createState() =>
+      _AdvertisementAnalyticsScreenState();
 }
 
-class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScreen> {
+class _AdvertisementAnalyticsScreenState
+    extends State<AdvertisementAnalyticsScreen> {
   Map<String, dynamic>? _analytics;
   bool _isLoading = true;
 
@@ -23,13 +26,22 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
 
   Future<void> _loadAnalytics() async {
     setState(() => _isLoading = true);
-    final adRepo = Provider.of<AdvertisementRepository>(context, listen: false);
-    final data = await adRepo.getAnalytics();
-    if (mounted) {
-      setState(() {
-        _analytics = data;
-        _isLoading = false;
-      });
+    try {
+      final adRepo = Provider.of<AdvertisementRepository>(
+        context,
+        listen: false,
+      );
+      final data = await adRepo.getAnalytics();
+      if (mounted) {
+        setState(() {
+          _analytics = data;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -45,7 +57,9 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdvertisementManagementScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AdvertisementManagementScreen(),
+                ),
               );
             },
           ),
@@ -59,33 +73,40 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _analytics == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.analytics_outlined, size: 64, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      const Text('Could not load advertising metrics'),
-                      const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadAnalytics, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.analytics_outlined,
+                    size: 64,
+                    color: Colors.grey,
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadAnalytics,
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      _buildSummaryCards(),
-                      const SizedBox(height: 24),
-                      _buildCtrMeter(),
-                      const SizedBox(height: 24),
-                      _buildCategoryBreakdown(),
-                      const SizedBox(height: 24),
-                      _buildPlacementBreakdown(),
-                    ],
+                  const SizedBox(height: 12),
+                  const Text('Could not load advertising metrics'),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadAnalytics,
+                    child: const Text('Retry'),
                   ),
-                ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadAnalytics,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildSummaryCards(),
+                  const SizedBox(height: 24),
+                  _buildCtrMeter(),
+                  const SizedBox(height: 24),
+                  _buildCategoryBreakdown(),
+                  const SizedBox(height: 24),
+                  _buildPlacementBreakdown(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -106,17 +127,45 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _metricCard('Total Campaigns', '$total', Icons.campaign, Colors.blue)),
+            Expanded(
+              child: _metricCard(
+                'Total Campaigns',
+                '$total',
+                Icons.campaign,
+                Colors.blue,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _metricCard('Active Now', '$active', Icons.check_circle, Colors.green)),
+            Expanded(
+              child: _metricCard(
+                'Active Now',
+                '$active',
+                Icons.check_circle,
+                Colors.green,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _metricCard('Total Impressions', '$impressions', Icons.visibility, Colors.purple)),
+            Expanded(
+              child: _metricCard(
+                'Total Impressions',
+                '$impressions',
+                Icons.visibility,
+                Colors.purple,
+              ),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _metricCard('Total Clicks', '$clicks', Icons.touch_app, Colors.orange)),
+            Expanded(
+              child: _metricCard(
+                'Total Clicks',
+                '$clicks',
+                Icons.touch_app,
+                Colors.orange,
+              ),
+            ),
           ],
         ),
       ],
@@ -167,7 +216,9 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
               value: (ctr / 20.0).clamp(0.0, 1.0),
               minHeight: 12,
               backgroundColor: Colors.grey.shade300,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppTheme.primaryColor,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -206,7 +257,9 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
               final count = item['count'] ?? 0;
               final imp = (item['impressions'] as num?)?.toInt() ?? 0;
               final clk = (item['clicks'] as num?)?.toInt() ?? 0;
-              final catCtr = imp > 0 ? ((clk / imp) * 100).toStringAsFixed(1) : '0.0';
+              final catCtr = imp > 0
+                  ? ((clk / imp) * 100).toStringAsFixed(1)
+                  : '0.0';
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -216,30 +269,58 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
                       flex: 3,
                       child: Text(
                         cat.replaceAll('_', ' ').toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     Expanded(
                       flex: 2,
-                      child: Text('$count ads', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      child: Text(
+                        '$count ads',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                     Expanded(
                       flex: 2,
-                      child: Text('$imp views', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      child: Text(
+                        '$imp views',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                     Expanded(
                       flex: 2,
-                      child: Text('$clk clicks', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                      child: Text(
+                        '$clk clicks',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.blue.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '$catCtr% CTR',
-                        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 11),
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ],
@@ -276,7 +357,9 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
               final placement = item['placement']?.toString() ?? 'General';
               final imp = (item['impressions'] as num?)?.toInt() ?? 0;
               final clk = (item['clicks'] as num?)?.toInt() ?? 0;
-              final pCtr = imp > 0 ? ((clk / imp) * 100).toStringAsFixed(1) : '0.0';
+              final pCtr = imp > 0
+                  ? ((clk / imp) * 100).toStringAsFixed(1)
+                  : '0.0';
 
               return ListTile(
                 dense: true,
@@ -284,13 +367,23 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
                 leading: CircleAvatar(
                   radius: 16,
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.12),
-                  child: Icon(_getPlacementIcon(placement), size: 16, color: AppTheme.primaryColor),
+                  child: Icon(
+                    _getPlacementIcon(placement),
+                    size: 16,
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
-                title: Text(placement.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
+                title: Text(
+                  placement.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 subtitle: Text('$imp impressions • $clk clicks'),
                 trailing: Text(
                   '$pCtr% CTR',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
                 ),
               );
             }),
@@ -334,7 +427,10 @@ class _AdvertisementAnalyticsScreenState extends State<AdvertisementAnalyticsScr
               children: [
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   label,

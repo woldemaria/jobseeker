@@ -26,7 +26,9 @@ class DocumentModel {
       originalName: json['original_name'] ?? '',
       storagePath: json['storage_path'] ?? '',
       mimeType: json['mime_type'] ?? '',
-      fileSize: json['file_size'] ?? 0,
+      fileSize: json['file_size'] is int
+          ? json['file_size']
+          : (int.tryParse(json['file_size']?.toString() ?? '0') ?? 0),
       documentType: json['document_type'] ?? 'other',
       createdAt: json['created_at'] ?? '',
     );

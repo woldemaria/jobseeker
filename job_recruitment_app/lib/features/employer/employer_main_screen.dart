@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
@@ -32,7 +33,8 @@ class EmployerMainScreen extends StatefulWidget {
 
 class _EmployerMainScreenState extends State<EmployerMainScreen> {
   int _currentIndex = 0;
-  final GlobalKey<ManageJobsScreenState> _manageJobsKey = GlobalKey<ManageJobsScreenState>();
+  final GlobalKey<ManageJobsScreenState> _manageJobsKey =
+      GlobalKey<ManageJobsScreenState>();
 
   void _onTabChange(int index) {
     setState(() => _currentIndex = index);
@@ -68,16 +70,11 @@ class _EmployerMainScreenState extends State<EmployerMainScreen> {
           _manageJobsKey.currentState?.loadJobs();
         },
       ),
-      OrganizationProfileScreen(
-        apiService: widget.apiService,
-      ),
+      OrganizationProfileScreen(apiService: widget.apiService),
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
@@ -100,7 +97,10 @@ class _EmployerMainScreenState extends State<EmployerMainScreen> {
           ),
           NavigationDestination(
             icon: const Icon(Icons.add_circle_outline),
-            selectedIcon: const Icon(Icons.add_circle, color: Color(0xFF0D6B4F)),
+            selectedIcon: const Icon(
+              Icons.add_circle,
+              color: Color(0xFF0D6B4F),
+            ),
             label: loc.t('create_job'),
           ),
           NavigationDestination(

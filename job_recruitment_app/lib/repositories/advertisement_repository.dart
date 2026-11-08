@@ -25,10 +25,15 @@ class AdvertisementRepository {
       params['personalized'] = personalized ? '1' : '0';
     }
 
-    final response = await _apiService.get(ApiConstants.advertisements, queryParams: params);
+    final response = await _apiService.get(
+      ApiConstants.advertisements,
+      queryParams: params,
+    );
     if (response.success && response.data is List) {
       return (response.data as List)
-          .map((json) => AdvertisementModel.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => AdvertisementModel.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];
@@ -54,13 +59,20 @@ class AdvertisementRepository {
   }) async {
     final Map<String, String> params = {};
     if (status != null && status.isNotEmpty) params['status'] = status;
-    if (placement != null && placement.isNotEmpty) params['placement'] = placement;
+    if (placement != null && placement.isNotEmpty) {
+      params['placement'] = placement;
+    }
     if (category != null && category.isNotEmpty) params['category'] = category;
 
-    final response = await _apiService.get(ApiConstants.adminAdvertisements, queryParams: params);
+    final response = await _apiService.get(
+      ApiConstants.adminAdvertisements,
+      queryParams: params,
+    );
     if (response.success && response.data is List) {
       return (response.data as List)
-          .map((json) => AdvertisementModel.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => AdvertisementModel.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     }
     return [];
@@ -77,15 +89,16 @@ class AdvertisementRepository {
 
   /// Admin: Toggle status
   Future<bool> toggleStatus(int id, String status) async {
-    final response = await _apiService.patch(
-      ApiConstants.adminAdStatus(id),
-      {'status': status},
-    );
+    final response = await _apiService.patch(ApiConstants.adminAdStatus(id), {
+      'status': status,
+    });
     return response.success;
   }
 
   /// Admin: Create advertisement
-  Future<AdvertisementModel?> createAdvertisement(Map<String, dynamic> data) async {
+  Future<AdvertisementModel?> createAdvertisement(
+    Map<String, dynamic> data,
+  ) async {
     lastErrorMessage = null;
     final response = await _apiService.post(
       ApiConstants.adminAdvertisements,
@@ -94,12 +107,17 @@ class AdvertisementRepository {
     if (response.success && response.data is Map<String, dynamic>) {
       return AdvertisementModel.fromJson(response.data as Map<String, dynamic>);
     }
-    lastErrorMessage = response.message.isNotEmpty ? response.message : 'Failed to create advertisement campaign.';
+    lastErrorMessage = response.message.isNotEmpty
+        ? response.message
+        : 'Failed to create advertisement campaign.';
     return null;
   }
 
   /// Admin: Update advertisement
-  Future<AdvertisementModel?> updateAdvertisement(int id, Map<String, dynamic> data) async {
+  Future<AdvertisementModel?> updateAdvertisement(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
     lastErrorMessage = null;
     final response = await _apiService.put(
       ApiConstants.adminAdDetail(id),
@@ -108,7 +126,9 @@ class AdvertisementRepository {
     if (response.success && response.data is Map<String, dynamic>) {
       return AdvertisementModel.fromJson(response.data as Map<String, dynamic>);
     }
-    lastErrorMessage = response.message.isNotEmpty ? response.message : 'Failed to update advertisement campaign.';
+    lastErrorMessage = response.message.isNotEmpty
+        ? response.message
+        : 'Failed to update advertisement campaign.';
     return null;
   }
 
@@ -117,7 +137,9 @@ class AdvertisementRepository {
     lastErrorMessage = null;
     final response = await _apiService.delete(ApiConstants.adminAdDetail(id));
     if (!response.success) {
-      lastErrorMessage = response.message.isNotEmpty ? response.message : 'Failed to delete advertisement campaign.';
+      lastErrorMessage = response.message.isNotEmpty
+          ? response.message
+          : 'Failed to delete advertisement campaign.';
     }
     return response.success;
   }

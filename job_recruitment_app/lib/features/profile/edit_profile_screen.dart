@@ -1,6 +1,8 @@
 import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 export 'profile_form_screen.dart';
 import '../../repositories/profile_repository.dart';
 import '../../services/auth_service.dart';
@@ -82,7 +84,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _locationController.text = profile['location'] ?? '';
         _educationLevelController.text = profile['education_level'] ?? '';
         _fieldOfStudyController.text = profile['field_of_study'] ?? '';
-        _experienceController.text = (profile['experience_years'] ?? 0).toString();
+        _experienceController.text = (profile['experience_years'] ?? 0)
+            .toString();
         _bioController.text = profile['biography'] ?? '';
         _gender = profile['gender'];
       }
@@ -93,14 +96,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickImageFromDisk(BuildContext ctx) async {
     setState(() => _isPickingFile = true);
     try {
-      final files = await FilePicker.pickFiles(
-        type: FileType.image,
-      );
+      final files = await FilePicker.pickFiles(type: FileType.image);
       if (files.isNotEmpty) {
         final file = files.first;
         final bytes = await file.readAsBytes();
         final ext = file.name.split('.').last.toLowerCase();
-        final mime = (ext == 'png') ? 'image/png' : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
+        final mime = (ext == 'png')
+            ? 'image/png'
+            : (ext == 'webp' ? 'image/webp' : 'image/jpeg');
         final dataUri = 'data:$mime;base64,${base64Encode(bytes)}';
 
         setState(() {
@@ -111,7 +114,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
 
         // Upload directly to server storage endpoint
-        final uploadResp = await widget.profRepo.uploadProfilePhoto(bytes, file.name);
+        final uploadResp = await widget.profRepo.uploadProfilePhoto(
+          bytes,
+          file.name,
+        );
         if (uploadResp.success && uploadResp.data != null) {
           final serverUrl = uploadResp.data['profile_photo'] as String?;
           if (serverUrl != null && serverUrl.isNotEmpty) {
@@ -121,7 +127,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Profile photo uploaded and saved successfully!'),
+                  content: Text(
+                    'Profile photo uploaded and saved successfully!',
+                  ),
                   backgroundColor: Color(0xFF0D6B4F),
                 ),
               );
@@ -132,9 +140,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load image: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Failed to load image: $e')));
       }
     } finally {
       if (mounted) setState(() => _isPickingFile = false);
@@ -147,7 +154,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => StatefulBuilder(
         builder: (bottomCtx, setModalState) => Padding(
           padding: EdgeInsets.only(
@@ -165,10 +174,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   width: 36,
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const Text('Change Profile Photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Change Profile Photo',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 14),
 
               // Upload from Disk Button
@@ -180,15 +195,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0D6B4F).withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF0D6B4F), width: 1.5),
+                    border: Border.all(
+                      color: const Color(0xFF0D6B4F),
+                      width: 1.5,
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.file_upload_outlined, color: Color(0xFF0D6B4F), size: 22),
+                      const Icon(
+                        Icons.file_upload_outlined,
+                        color: Color(0xFF0D6B4F),
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        _isPickingFile ? 'Selecting Photo...' : 'Upload Photo from Device / Disk',
+                        _isPickingFile
+                            ? 'Selecting Photo...'
+                            : 'Upload Photo from Device / Disk',
                         style: const TextStyle(
                           color: Color(0xFF0D6B4F),
                           fontWeight: FontWeight.bold,
@@ -202,7 +226,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
               const Text(
                 'Or choose a professional avatar:',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF64748B)),
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                ),
               ),
               const SizedBox(height: 10),
 
@@ -230,10 +258,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isSelected ? const Color(0xFF0D6B4F) : Colors.grey.shade300,
+                          color: isSelected
+                              ? const Color(0xFF0D6B4F)
+                              : Colors.grey.shade300,
                           width: isSelected ? 2.5 : 1,
                         ),
-                        color: isSelected ? const Color(0xFF0D6B4F).withOpacity(0.08) : Colors.white,
+                        color: isSelected
+                            ? const Color(0xFF0D6B4F).withOpacity(0.08)
+                            : Colors.white,
                       ),
                       padding: const EdgeInsets.all(6),
                       child: Column(
@@ -248,8 +280,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             avatar['name']!,
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? const Color(0xFF0D6B4F) : const Color(0xFF334155),
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? const Color(0xFF0D6B4F)
+                                  : const Color(0xFF334155),
                             ),
                             textAlign: TextAlign.center,
                             maxLines: 1,
@@ -287,8 +323,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       setState(() => _profilePhoto = null);
                       Navigator.pop(ctx);
                     },
-                    icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626), size: 16),
-                    label: const Text('Remove Photo', style: TextStyle(color: Color(0xFFDC2626))),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Color(0xFFDC2626),
+                      size: 16,
+                    ),
+                    label: const Text(
+                      'Remove Photo',
+                      style: TextStyle(color: Color(0xFFDC2626)),
+                    ),
                   ),
                 ),
             ],
@@ -307,7 +350,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'location': _locationController.text.trim(),
       'education_level': _educationLevelController.text.trim(),
       'field_of_study': _fieldOfStudyController.text.trim(),
-      'experience_years': double.tryParse(_experienceController.text.trim()) ?? 0,
+      'experience_years':
+          double.tryParse(_experienceController.text.trim()) ?? 0,
       'biography': _bioController.text.trim(),
       'gender': _gender,
     });
@@ -321,9 +365,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -364,7 +407,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: const Color(0xFF0D6B4F).withOpacity(0.08),
-                            border: Border.all(color: const Color(0xFF0D6B4F), width: 2.5),
+                            border: Border.all(
+                              color: const Color(0xFF0D6B4F),
+                              width: 2.5,
+                            ),
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: avatarProvider != null
@@ -372,9 +418,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   image: avatarProvider,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.person, size: 52, color: Color(0xFF0D6B4F)),
+                                      const Icon(
+                                        Icons.person,
+                                        size: 52,
+                                        color: Color(0xFF0D6B4F),
+                                      ),
                                 )
-                              : const Icon(Icons.person, size: 52, color: Color(0xFF0D6B4F)),
+                              : const Icon(
+                                  Icons.person,
+                                  size: 52,
+                                  color: Color(0xFF0D6B4F),
+                                ),
                         ),
                       ),
                       Positioned(
@@ -389,7 +443,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 15),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 15,
+                            ),
                           ),
                         ),
                       ),
@@ -400,10 +458,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Center(
                   child: TextButton.icon(
                     onPressed: _showPhotoPicker,
-                    icon: const Icon(Icons.photo_library_outlined, size: 16, color: Color(0xFF0D6B4F)),
+                    icon: const Icon(
+                      Icons.photo_library_outlined,
+                      size: 16,
+                      color: Color(0xFF0D6B4F),
+                    ),
                     label: Text(
-                      _profilePhoto != null ? 'Change Profile Photo' : 'Upload Profile Photo',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF0D6B4F), fontWeight: FontWeight.w600),
+                      _profilePhoto != null
+                          ? 'Change Profile Photo'
+                          : 'Upload Profile Photo',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF0D6B4F),
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -458,7 +526,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     labelText: loc.t('experience_years'),
                     prefixIcon: const Icon(Icons.timeline_outlined),
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -503,10 +573,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF0D6B4F).withOpacity(0.12),
+                                color: const Color(0xFF0D6B4F)
+                                    .withOpacity(0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.description, color: Color(0xFF0D6B4F), size: 20),
+                              child: const Icon(
+                                Icons.description,
+                                color: Color(0xFF0D6B4F),
+                                size: 20,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             const Expanded(
@@ -515,11 +590,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 children: [
                                   Text(
                                     'Curriculum Vitae (CV) & Files',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                   Text(
                                     'Upload and manage your CVs from disk to apply for jobs.',
-                                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF64748B),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -534,12 +615,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => CvManagementScreen(profRepo: widget.profRepo),
+                                  builder: (_) => CvManagementScreen(
+                                    profRepo: widget.profRepo,
+                                  ),
                                 ),
                               );
                             },
-                            icon: const Icon(Icons.folder_open_outlined, color: Color(0xFF0D6B4F), size: 18),
-                            label: const Text('Manage & Upload CV from Disk', style: TextStyle(color: Color(0xFF0D6B4F))),
+                            icon: const Icon(
+                              Icons.folder_open_outlined,
+                              color: Color(0xFF0D6B4F),
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Manage & Upload CV from Disk',
+                              style: TextStyle(color: Color(0xFF0D6B4F)),
+                            ),
                           ),
                         ),
                       ],
@@ -554,7 +644,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(loc.t('save')),
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/api_service.dart';
 import '../../core/constants/api_constants.dart';
 import '../../l10n/app_localizations.dart';
@@ -36,7 +37,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _requestCode() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your registered email address.');
+      setState(
+        () => _errorMessage = 'Please enter your registered email address.',
+      );
       return;
     }
 
@@ -45,7 +48,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       _errorMessage = null;
     });
 
-    final resp = await widget.apiService.post(ApiConstants.forgotPassword, {'email': email});
+    final resp = await widget.apiService.post(ApiConstants.forgotPassword, {
+      'email': email,
+    });
 
     if (mounted) {
       setState(() => _isSubmitting = false);
@@ -59,9 +64,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(resp.message.isNotEmpty
-                ? resp.message
-                : 'Verification code generated and sent!'),
+            content: Text(
+              resp.message.isNotEmpty
+                  ? resp.message
+                  : 'Verification code generated and sent!',
+            ),
             backgroundColor: const Color(0xFF0D6B4F),
           ),
         );
@@ -78,11 +85,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final confirm = _confirmPasswordController.text;
 
     if (code.isEmpty) {
-      setState(() => _errorMessage = 'Please enter the 6-digit verification code.');
+      setState(
+        () => _errorMessage = 'Please enter the 6-digit verification code.',
+      );
       return;
     }
     if (password.length < 8) {
-      setState(() => _errorMessage = 'Password must be at least 8 characters long.');
+      setState(
+        () => _errorMessage = 'Password must be at least 8 characters long.',
+      );
       return;
     }
     if (password != confirm) {
@@ -109,9 +120,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           context: context,
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
-            icon: const Icon(Icons.check_circle_outline, color: Color(0xFF0D6B4F), size: 48),
+            icon: const Icon(
+              Icons.check_circle_outline,
+              color: Color(0xFF0D6B4F),
+              size: 48,
+            ),
             title: const Text('Password Reset Successful'),
-            content: const Text('Your account password has been updated. You can now log in with your new credentials.'),
+            content: const Text(
+              'Your account password has been updated. You can now log in with your new credentials.',
+            ),
             actions: [
               ElevatedButton(
                 onPressed: () {
@@ -139,7 +156,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentStep == 1 ? loc.t('forgot_password') : 'Reset Password'),
+        title: Text(
+          _currentStep == 1 ? loc.t('forgot_password') : 'Reset Password',
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -167,7 +186,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ? 'Recover Your Account'
                   : 'Create a New Secure Password',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -190,12 +213,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 20),
+                    const Icon(
+                      Icons.error_outline,
+                      color: Color(0xFFDC2626),
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage!,
-                        style: const TextStyle(color: Color(0xFFB91C1C), fontSize: 13),
+                        style: const TextStyle(
+                          color: Color(0xFFB91C1C),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -221,15 +251,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   backgroundColor: const Color(0xFF0D6B4F),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Text('Send Verification Code', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    : const Text(
+                        'Send Verification Code',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ] else ...[
               TextField(
@@ -250,8 +291,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   hintText: 'At least 8 characters',
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
               ),
@@ -264,8 +310,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   hintText: 'Repeat new password',
                   prefixIcon: const Icon(Icons.lock_reset),
                   suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                    onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                    icon: Icon(
+                      _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscureConfirm = !_obscureConfirm),
                   ),
                 ),
                 onSubmitted: (_) => _submitReset(),
@@ -277,19 +326,32 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   backgroundColor: const Color(0xFF0D6B4F),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
-                    : const Text('Reset Password & Complete', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    : const Text(
+                        'Reset Password & Complete',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
               const SizedBox(height: 12),
               TextButton(
-                onPressed: _isSubmitting ? null : () => setState(() => _currentStep = 1),
+                onPressed: _isSubmitting
+                    ? null
+                    : () => setState(() => _currentStep = 1),
                 child: const Text('Back / Re-enter Email Address'),
               ),
             ],

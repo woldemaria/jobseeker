@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../models/application_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../services/auth_service.dart';
@@ -9,6 +10,7 @@ import '../../services/storage_service.dart';
 import '../../core/constants/api_constants.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/status_badge.dart';
+import 'job_offer_modal.dart';
 
 class ApplicationDetailScreen extends StatefulWidget {
   final int applicationId;
@@ -21,7 +23,8 @@ class ApplicationDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ApplicationDetailScreen> createState() => _ApplicationDetailScreenState();
+  State<ApplicationDetailScreen> createState() =>
+      _ApplicationDetailScreenState();
 }
 
 class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
@@ -38,12 +41,20 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final app = await widget.appRepo.getApplicationDetails(widget.applicationId);
-    if (mounted) {
-      setState(() {
-        _application = app;
-        _isLoading = false;
-      });
+    try {
+      final app = await widget.appRepo.getApplicationDetails(
+        widget.applicationId,
+      );
+      if (mounted) {
+        setState(() {
+          _application = app;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -52,12 +63,19 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Withdraw Application'),
-        content: const Text('Are you sure you want to withdraw this job application? This action cannot be undone.'),
+        content: const Text(
+          'Are you sure you want to withdraw this job application? This action cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
             child: const Text('Withdraw'),
           ),
         ],
@@ -72,13 +90,12 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
       setState(() => _isWithdrawing = false);
       if (resp.success) {
         _load();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Application withdrawn.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Application withdrawn.')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -91,15 +108,16 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
       if (resp.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Interview attendance confirmed! The employer has been notified.'),
+            content: Text(
+              'Interview attendance confirmed! The employer has been notified.',
+            ),
             backgroundColor: Color(0xFF0D6B4F),
           ),
         );
         _load();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -107,10 +125,15 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
   Future<void> _viewCvDocument(int docId, String docName) async {
     final storage = Provider.of<StorageService>(context, listen: false);
     final token = storage.getToken();
-    final url = Uri.parse('${ApiConstants.baseUrl}/documents/$docId/view?token=$token&inline=1');
+    final url = Uri.parse(
+      '${ApiConstants.baseUrl}/documents/$docId/view?token=$token&inline=1',
+    );
 
     try {
-      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         await launchUrl(url, mode: LaunchMode.platformDefault);
       }
@@ -152,8 +175,13 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 const SizedBox(height: 14),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today, color: Color(0xFF0D6B4F)),
-                  title: Text('Date: ${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}'),
+                  leading: const Icon(
+                    Icons.calendar_today,
+                    color: Color(0xFF0D6B4F),
+                  ),
+                  title: Text(
+                    'Date: ${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: () async {
                     final d = await showDatePicker(
@@ -169,7 +197,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.access_time, color: Color(0xFF0D6B4F)),
+                  leading: const Icon(
+                    Icons.access_time,
+                    color: Color(0xFF0D6B4F),
+                  ),
                   title: Text('Time: ${selectedTime.format(context)}'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: () async {
@@ -218,20 +249,29 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                         if (resp.success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Reschedule request sent to employer.'),
+                              content: Text(
+                                'Reschedule request sent to employer.',
+                              ),
                               backgroundColor: Color(0xFF0D6B4F),
                             ),
                           );
                           _load();
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(resp.message)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(resp.message)));
                         }
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Send Request'),
             ),
           ],
@@ -241,7 +281,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
   }
 
   void _showEmployerScheduleDialog() {
-    final locationController = TextEditingController(text: 'Google Meet / Online');
+    final locationController = TextEditingController(
+      text: 'Google Meet / Online',
+    );
     final notesController = TextEditingController();
     String selectedType = 'video';
     DateTime selectedDate = DateTime.now().add(const Duration(days: 2));
@@ -266,11 +308,22 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
               children: [
                 DropdownButtonFormField<String>(
                   value: selectedType,
-                  decoration: const InputDecoration(labelText: 'Interview Mode'),
+                  decoration: const InputDecoration(
+                    labelText: 'Interview Mode',
+                  ),
                   items: const [
-                    DropdownMenuItem(value: 'video', child: Text('Video Conference (Online)')),
-                    DropdownMenuItem(value: 'in_person', child: Text('In-Person Office Interview')),
-                    DropdownMenuItem(value: 'phone', child: Text('Phone Screening')),
+                    DropdownMenuItem(
+                      value: 'video',
+                      child: Text('Video Conference (Online)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'in_person',
+                      child: Text('In-Person Office Interview'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'phone',
+                      child: Text('Phone Screening'),
+                    ),
                   ],
                   onChanged: (val) {
                     if (val != null) {
@@ -279,7 +332,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                         if (val == 'video') {
                           locationController.text = 'Google Meet: https://meet.google.com/job-interview';
                         } else if (val == 'in_person') {
-                          locationController.text = _application?.job?.location ?? 'Head Office, Addis Ababa';
+                          locationController.text =
+                              _application?.job?.location ??
+                              'Head Office, Addis Ababa';
                         } else {
                           locationController.text = 'Direct Phone Call';
                         }
@@ -290,8 +345,13 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today, color: Color(0xFF0D6B4F)),
-                  title: Text('Date: ${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}'),
+                  leading: const Icon(
+                    Icons.calendar_today,
+                    color: Color(0xFF0D6B4F),
+                  ),
+                  title: Text(
+                    'Date: ${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+                  ),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: () async {
                     final d = await showDatePicker(
@@ -305,7 +365,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.access_time, color: Color(0xFF0D6B4F)),
+                  leading: const Icon(
+                    Icons.access_time,
+                    color: Color(0xFF0D6B4F),
+                  ),
                   title: Text('Time: ${selectedTime.format(context)}'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 14),
                   onTap: () async {
@@ -329,7 +392,8 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                   maxLines: 2,
                   decoration: const InputDecoration(
                     labelText: 'Candidate Preparation Instructions',
-                    hintText: 'e.g. Please bring portfolio and identification ID...',
+                    hintText:
+                        'e.g. Please bring portfolio and identification ID...',
                   ),
                 ),
               ],
@@ -361,20 +425,29 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                         if (resp.success) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Interview invitation scheduled and sent!'),
+                              content: Text(
+                                'Interview invitation scheduled and sent!',
+                              ),
                               backgroundColor: Color(0xFF0D6B4F),
                             ),
                           );
                           _load();
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(resp.message)),
-                          );
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(resp.message)));
                         }
                       }
                     },
               child: isSubmitting
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
                   : const Text('Confirm Schedule'),
             ),
           ],
@@ -416,7 +489,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
             children: [
               const Text(
                 'Recruitment Progression',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF334155)),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Color(0xFF334155),
+                ),
               ),
               if (isRejected)
                 const StatusBadge(status: 'rejected')
@@ -427,8 +504,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
           const SizedBox(height: 12),
           Row(
             children: List.generate(stages.length, (index) {
-              final isPassed = index <= currentIndex && !isRejected && !isWithdrawn;
-              final isCurrent = index == currentIndex && !isRejected && !isWithdrawn;
+              final isPassed =
+                  index <= currentIndex && !isRejected && !isWithdrawn;
+              final isCurrent =
+                  index == currentIndex && !isRejected && !isWithdrawn;
 
               return Expanded(
                 child: Column(
@@ -440,23 +519,33 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                             height: 3,
                             color: index == 0
                                 ? Colors.transparent
-                                : (index <= currentIndex ? const Color(0xFF0D6B4F) : Colors.grey.shade300),
+                                : (index <= currentIndex
+                                      ? const Color(0xFF0D6B4F)
+                                      : Colors.grey.shade300),
                           ),
                         ),
                         Container(
                           width: 22,
                           height: 22,
                           decoration: BoxDecoration(
-                            color: isPassed ? const Color(0xFF0D6B4F) : Colors.white,
+                            color: isPassed
+                                ? const Color(0xFF0D6B4F)
+                                : Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isPassed ? const Color(0xFF0D6B4F) : Colors.grey.shade400,
+                              color: isPassed
+                                  ? const Color(0xFF0D6B4F)
+                                  : Colors.grey.shade400,
                               width: 2,
                             ),
                           ),
                           child: Center(
                             child: isPassed
-                                ? const Icon(Icons.check, size: 12, color: Colors.white)
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 12,
+                                    color: Colors.white,
+                                  )
                                 : Text(
                                     '${index + 1}',
                                     style: TextStyle(
@@ -472,7 +561,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                             height: 3,
                             color: index == stages.length - 1
                                 ? Colors.transparent
-                                : (index < currentIndex ? const Color(0xFF0D6B4F) : Colors.grey.shade300),
+                                : (index < currentIndex
+                                      ? const Color(0xFF0D6B4F)
+                                      : Colors.grey.shade300),
                           ),
                         ),
                       ],
@@ -482,8 +573,12 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       stages[index]['label']!,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                        color: isCurrent ? const Color(0xFF0D6B4F) : const Color(0xFF64748B),
+                        fontWeight: isCurrent
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: isCurrent
+                            ? const Color(0xFF0D6B4F)
+                            : const Color(0xFF64748B),
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,
@@ -524,7 +619,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     color: const Color(0xFF0D6B4F),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.calendar_month, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.calendar_month,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -533,20 +632,32 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     children: [
                       const Text(
                         'Interview Booking & Appointment',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F5132)),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Color(0xFF0F5132),
+                        ),
                       ),
                       Text(
                         app.interviewStatus != null
                             ? 'Status: ${app.interviewStatus!.toUpperCase()}'
                             : 'Interview Scheduled',
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF15803D), fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF15803D),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 if (isEmployer)
                   IconButton(
-                    icon: const Icon(Icons.edit, color: Color(0xFF0D6B4F), size: 18),
+                    icon: const Icon(
+                      Icons.edit,
+                      color: Color(0xFF0D6B4F),
+                      size: 18,
+                    ),
                     tooltip: 'Edit Schedule',
                     onPressed: _showEmployerScheduleDialog,
                   ),
@@ -557,22 +668,38 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
             if (app.interviewAt != null) ...[
               Row(
                 children: [
-                  const Icon(Icons.access_time_filled, size: 18, color: Color(0xFF0D6B4F)),
+                  const Icon(
+                    Icons.access_time_filled,
+                    size: 18,
+                    color: Color(0xFF0D6B4F),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Time: ${app.interviewAt!.replaceFirst('T', ' ').split('.').first}',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.videocam_outlined, size: 18, color: Color(0xFF0D6B4F)),
+                  const Icon(
+                    Icons.videocam_outlined,
+                    size: 18,
+                    color: Color(0xFF0D6B4F),
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'Type: ${(app.interviewType ?? "Video Conference").toUpperCase()}',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF334155),
+                    ),
                   ),
                 ],
               ),
@@ -581,29 +708,47 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFF0D6B4F)),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      size: 18,
+                      color: Color(0xFF0D6B4F),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Location: ${app.interviewLocation!}',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF334155)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF334155),
+                        ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.copy, size: 16, color: Color(0xFF0D6B4F)),
+                      icon: const Icon(
+                        Icons.copy,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       constraints: const BoxConstraints(),
                       padding: EdgeInsets.zero,
                       tooltip: 'Copy Meeting Link/Address',
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: app.interviewLocation!));
+                        Clipboard.setData(
+                          ClipboardData(text: app.interviewLocation!),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Interview location copied to clipboard!')),
+                          const SnackBar(
+                            content: Text(
+                              'Interview location copied to clipboard!',
+                            ),
+                          ),
                         );
                       },
                     ),
                   ],
                 ),
-              if (app.interviewNotes != null && app.interviewNotes!.isNotEmpty) ...[
+              if (app.interviewNotes != null &&
+                  app.interviewNotes!.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -615,12 +760,19 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.info_outline, size: 16, color: Color(0xFF0D6B4F)),
+                      const Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'Instructions: ${app.interviewNotes!}',
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF334155)),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF334155),
+                          ),
                         ),
                       ),
                     ],
@@ -636,10 +788,22 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     if (app.interviewStatus != 'confirmed')
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _isConfirmingInterview ? null : _confirmInterview,
+                          onPressed: _isConfirmingInterview
+                              ? null
+                              : _confirmInterview,
                           icon: _isConfirmingInterview
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.check_circle_outline, size: 16),
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 16,
+                                ),
                           label: const Text('Confirm Attendance'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0D6B4F),
@@ -649,7 +813,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       )
                     else
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0D6B4F),
                           borderRadius: BorderRadius.circular(6),
@@ -659,15 +826,29 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                           children: [
                             Icon(Icons.verified, size: 16, color: Colors.white),
                             SizedBox(width: 6),
-                            Text('Attendance Confirmed', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text(
+                              'Attendance Confirmed',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                     const SizedBox(width: 10),
                     OutlinedButton.icon(
                       onPressed: _showRescheduleDialog,
-                      icon: const Icon(Icons.schedule, size: 16, color: Color(0xFF0D6B4F)),
-                      label: const Text('Reschedule', style: TextStyle(color: Color(0xFF0D6B4F))),
+                      icon: const Icon(
+                        Icons.schedule,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
+                      label: const Text(
+                        'Reschedule',
+                        style: TextStyle(color: Color(0xFF0D6B4F)),
+                      ),
                     ),
                   ],
                 ),
@@ -690,11 +871,108 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
     );
   }
 
+  Widget _buildJobOfferBanner() {
+    if (_application == null) return const SizedBox.shrink();
+    final isOffered = _application!.status == 'offered';
+    final isAccepted = _application!.status == 'accepted';
+
+    if (!isOffered && !isAccepted) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.verified,
+                  color: Color(0xFF0D6B4F),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isOffered
+                          ? '🎉 Official Job Offer Received!'
+                          : '🤝 Job Offer Accepted!',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isOffered
+                          ? 'The employer has extended a formal employment offer. Please review salary, benefits, and conditions.'
+                          : 'You have formally accepted this offer. Review details and prepare for onboarding.',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                JobOfferModal.show(
+                  context,
+                  applicationId: widget.applicationId,
+                  onOfferUpdated: _load,
+                );
+              },
+              icon: const Icon(Icons.assignment_turned_in, size: 18),
+              label: Text(
+                isOffered
+                    ? 'Review & Respond to Job Offer'
+                    : 'View Formal Offer Contract',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D6B4F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final auth = Provider.of<AuthService>(context, listen: false);
-    final isEmployer = auth.currentUser?.isEmployer == true || auth.currentUser?.isAdmin == true;
+    final isEmployer =
+        auth.currentUser?.isEmployer == true ||
+        auth.currentUser?.isAdmin == true;
 
     if (_isLoading) {
       return Scaffold(
@@ -710,7 +988,8 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
       );
     }
 
-    final canWithdraw = !isEmployer &&
+    final canWithdraw =
+        !isEmployer &&
         _application!.status != 'withdrawn' &&
         _application!.status != 'rejected' &&
         _application!.status != 'accepted';
@@ -733,7 +1012,9 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
           Card(
             margin: EdgeInsets.zero,
             elevation: 0.5,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -745,7 +1026,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       Expanded(
                         child: Text(
                           _application!.job?.title ?? 'Vacancy',
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       StatusBadge(status: _application!.status),
@@ -753,8 +1037,13 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    _application!.job?.employer?.organizationName ?? 'Enterprise Employer',
-                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 14, fontWeight: FontWeight.w500),
+                    _application!.job?.employer?.organizationName ??
+                        'Enterprise Employer',
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Divider(),
@@ -764,11 +1053,18 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                     children: [
                       Text(
                         'Applied Date: ${_application!.appliedAt.split('T').first}',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF475569),
+                        ),
                       ),
                       Text(
                         'Type: ${_application!.job?.employmentType ?? "Full-time"}',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
                   ),
@@ -781,7 +1077,10 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                       ),
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(8),
@@ -789,7 +1088,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.picture_as_pdf, size: 20, color: Color(0xFFDC2626)),
+                            const Icon(
+                              Icons.picture_as_pdf,
+                              size: 20,
+                              color: Color(0xFFDC2626),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Column(
@@ -797,18 +1100,29 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                                 children: [
                                   Text(
                                     'Attached CV: ${_application!.cvDocument!.originalName}',
-                                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1E293B)),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1E293B),
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     '${_application!.cvDocument!.formattedSize} • Tap to view/download',
-                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF64748B),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.open_in_new, size: 16, color: Color(0xFF0D6B4F)),
+                            const Icon(
+                              Icons.open_in_new,
+                              size: 16,
+                              color: Color(0xFF0D6B4F),
+                            ),
                           ],
                         ),
                       ),
@@ -823,12 +1137,19 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
           // Stepper
           _buildRecruitmentStepper(_application!.status),
 
+          // Formal Job Offer Management Card
+          _buildJobOfferBanner(),
+
           // Interview Booking Card
           _buildInterviewBookingCard(_application!, isEmployer),
 
-          if (_application!.coverLetter != null && _application!.coverLetter!.isNotEmpty) ...[
+          if (_application!.coverLetter != null &&
+              _application!.coverLetter!.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text(loc.t('cover_letter'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              loc.t('cover_letter'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Card(
               margin: EdgeInsets.zero,
@@ -839,16 +1160,25 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
               ),
               child: Padding(
                 padding: const EdgeInsets.all(14),
-                child: Text(_application!.coverLetter!, style: const TextStyle(height: 1.4, fontSize: 13)),
+                child: Text(
+                  _application!.coverLetter!,
+                  style: const TextStyle(height: 1.4, fontSize: 13),
+                ),
               ),
             ),
           ],
 
           const SizedBox(height: 20),
-          Text(loc.t('status_history'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            loc.t('status_history'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
           if (_application!.statusHistories.isEmpty)
-            const Text('No status history recorded yet.', style: TextStyle(color: Color(0xFF64748B)))
+            const Text(
+              'No status history recorded yet.',
+              style: TextStyle(color: Color(0xFF64748B)),
+            )
           else
             ..._application!.statusHistories.map((h) {
               return Card(
@@ -863,7 +1193,11 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.history, size: 18, color: Color(0xFF0D6B4F)),
+                      const Icon(
+                        Icons.history,
+                        size: 18,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -875,13 +1209,22 @@ class _ApplicationDetailScreenState extends State<ApplicationDetailScreen> {
                                 StatusBadge(status: h.newStatus),
                                 Text(
                                   h.createdAt.split('T').first,
-                                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF94A3B8),
+                                  ),
                                 ),
                               ],
                             ),
                             if (h.notes != null && h.notes!.isNotEmpty) ...[
                               const SizedBox(height: 6),
-                              Text(h.notes!, style: const TextStyle(fontSize: 12, color: Color(0xFF475569))),
+                              Text(
+                                h.notes!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF475569),
+                                ),
+                              ),
                             ],
                           ],
                         ),

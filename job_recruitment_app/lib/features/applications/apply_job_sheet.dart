@@ -1,6 +1,8 @@
 import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import '../../models/document_model.dart';
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
@@ -65,14 +67,22 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
   Future<void> _fetchCvs({int? selectDocId}) async {
     try {
       final docs = await widget.profileRepo.getDocuments();
-      final cvs = docs.where((d) => d.documentType.toLowerCase() == 'cv' || d.documentType.toLowerCase() == 'resume').toList();
+      final cvs = docs
+          .where(
+            (d) =>
+                d.documentType.toLowerCase() == 'cv' ||
+                d.documentType.toLowerCase() == 'resume',
+          )
+          .toList();
       final usableDocs = cvs.isNotEmpty ? cvs : docs;
       if (mounted) {
         setState(() {
           _cvDocuments = usableDocs;
           if (selectDocId != null) {
             _selectedCvId = selectDocId;
-          } else if (usableDocs.isNotEmpty && (_selectedCvId == null || !usableDocs.any((d) => d.id == _selectedCvId))) {
+          } else if (usableDocs.isNotEmpty &&
+              (_selectedCvId == null ||
+                  !usableDocs.any((d) => d.id == _selectedCvId))) {
             _selectedCvId = usableDocs.first.id;
           }
           _isLoadingDocs = false;
@@ -104,20 +114,30 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
         final f = files.first;
         final Uint8List bytes = await f.readAsBytes();
 
-        final resp = await widget.profileRepo.uploadDocumentBytes(bytes, f.name, 'cv');
+        final resp = await widget.profileRepo.uploadDocumentBytes(
+          bytes,
+          f.name,
+          'cv',
+        );
         if (resp.success && resp.data != null) {
           final newDocId = resp.data['id'] as int?;
           await _fetchCvs(selectDocId: newDocId);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('CV "${f.name}" uploaded from disk and selected!'),
+                content: Text(
+                  'CV "${f.name}" uploaded from disk and selected!',
+                ),
                 backgroundColor: const Color(0xFF0D6B4F),
               ),
             );
           }
         } else {
-          setState(() => _errorMessage = resp.message.isNotEmpty ? resp.message : 'CV upload failed.');
+          setState(
+            () => _errorMessage = resp.message.isNotEmpty
+                ? resp.message
+                : 'CV upload failed.',
+          );
         }
       }
     } catch (e) {
@@ -143,10 +163,18 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
       buffer.writeln('========================================');
       buffer.writeln('CURRICULUM VITAE - ${widget.job.title.toUpperCase()}');
       buffer.writeln('========================================');
-      buffer.writeln('Candidate: ${userProfile?['headline'] ?? "Job Seeker Candidate"}');
-      buffer.writeln('Bio: ${userProfile?['bio'] ?? "Dedicated Ethiopian professional"}');
-      buffer.writeln('Location: ${userProfile?['location'] ?? widget.job.location}');
-      buffer.writeln('Experience: ${userProfile?['experience_years'] ?? 0} years');
+      buffer.writeln(
+        'Candidate: ${userProfile?['headline'] ?? "Job Seeker Candidate"}',
+      );
+      buffer.writeln(
+        'Bio: ${userProfile?['bio'] ?? "Dedicated Ethiopian professional"}',
+      );
+      buffer.writeln(
+        'Location: ${userProfile?['location'] ?? widget.job.location}',
+      );
+      buffer.writeln(
+        'Experience: ${userProfile?['experience_years'] ?? 0} years',
+      );
       buffer.writeln('');
       buffer.writeln('--- PROFESSIONAL SKILLS ---');
       for (final s in skills) {
@@ -155,18 +183,27 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
       buffer.writeln('');
       buffer.writeln('--- WORK EXPERIENCE ---');
       for (final exp in experiences) {
-        buffer.writeln('• ${exp['job_title']} at ${exp['company_name']} (${exp['start_date']} - ${exp['end_date'] ?? "Present"})');
+        buffer.writeln(
+          '• ${exp['job_title']} at ${exp['company_name']} (${exp['start_date']} - ${exp['end_date'] ?? "Present"})',
+        );
       }
       buffer.writeln('');
       buffer.writeln('--- EDUCATION ---');
       for (final edu in educations) {
-        buffer.writeln('• ${edu['degree']} in ${edu['field_of_study']} from ${edu['institution_name']}');
+        buffer.writeln(
+          '• ${edu['degree']} in ${edu['field_of_study']} from ${edu['institution_name']}',
+        );
       }
 
       final bytes = Uint8List.fromList(buffer.toString().codeUnits);
-      final filename = 'Profile_Resume_${DateTime.now().millisecondsSinceEpoch}.txt';
+      final filename =
+          'Profile_Resume_${DateTime.now().millisecondsSinceEpoch}.txt';
 
-      final resp = await widget.profileRepo.uploadDocumentBytes(bytes, filename, 'cv');
+      final resp = await widget.profileRepo.uploadDocumentBytes(
+        bytes,
+        filename,
+        'cv',
+      );
       if (resp.success && resp.data != null) {
         final newDocId = resp.data['id'] as int?;
         await _fetchCvs(selectDocId: newDocId);
@@ -180,7 +217,11 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
         }
         return true;
       } else {
-        setState(() => _errorMessage = resp.message.isNotEmpty ? resp.message : 'Failed to generate profile CV.');
+        setState(
+          () => _errorMessage = resp.message.isNotEmpty
+              ? resp.message
+              : 'Failed to generate profile CV.',
+        );
         return false;
       }
     } catch (e) {
@@ -197,7 +238,10 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
     if (_selectedCvId == null) {
       final generated = await _generateProfileCv();
       if (!generated || _selectedCvId == null) {
-        setState(() => _errorMessage = 'Please upload or select a CV/Resume document before submitting.');
+        setState(
+          () => _errorMessage =
+              'Please upload or select a CV/Resume document before submitting.',
+        );
         return;
       }
     }
@@ -228,7 +272,8 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
             ),
           );
           widget.onApplied();
-        } else if (resp.statusCode == 409 || resp.message.toLowerCase().contains('already applied')) {
+        } else if (resp.statusCode == 409 ||
+            resp.message.toLowerCase().contains('already applied')) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -239,15 +284,22 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
           );
           widget.onApplied();
         } else {
-          setState(() => _errorMessage = resp.message.isNotEmpty ? resp.message : 'Application submission failed.');
+          setState(
+            () => _errorMessage = resp.message.isNotEmpty
+                ? resp.message
+                : 'Application submission failed.',
+          );
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isSubmitting = false;
           _errorMessage = 'Application error: $e';
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -292,7 +344,11 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
                   color: const Color(0xFF0D6B4F).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.send_rounded, color: Color(0xFF0D6B4F), size: 20),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Color(0xFF0D6B4F),
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -301,13 +357,19 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
                   children: [
                     Text(
                       '${loc.t('apply_now')}: ${widget.job.title}',
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       widget.job.employer?.organizationName ?? 'Employer',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
                   ],
                 ),
@@ -325,10 +387,20 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 18),
+                  const Icon(
+                    Icons.error_outline,
+                    color: Color(0xFFDC2626),
+                    size: 18,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(_errorMessage!, style: const TextStyle(color: Color(0xFF991B1B), fontSize: 13)),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: Color(0xFF991B1B),
+                        fontSize: 13,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -339,16 +411,31 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
             children: [
               Text(
                 loc.t('select_cv'),
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               TextButton.icon(
                 onPressed: _isUploadingCv ? null : _pickAndUploadCvFromDisk,
                 icon: _isUploadingCv
-                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.upload_file, size: 16, color: Color(0xFF0D6B4F)),
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(
+                        Icons.upload_file,
+                        size: 16,
+                        color: Color(0xFF0D6B4F),
+                      ),
                 label: Text(
                   _isUploadingCv ? 'Uploading...' : 'Upload CV from Disk',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF0D6B4F), fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF0D6B4F),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -356,7 +443,12 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
           const SizedBox(height: 4),
 
           if (_isLoadingDocs)
-            const Center(child: Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator()))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(12.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
           else if (_cvDocuments.isEmpty)
             Container(
               width: double.infinity,
@@ -378,19 +470,40 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: _isUploadingCv ? null : _pickAndUploadCvFromDisk,
+                          onPressed: _isUploadingCv
+                              ? null
+                              : _pickAndUploadCvFromDisk,
                           icon: _isUploadingCv
-                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? const SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
                               : const Icon(Icons.file_upload, size: 16),
-                          label: Text(_isUploadingCv ? 'Uploading...' : 'Upload File'),
+                          label: Text(
+                            _isUploadingCv ? 'Uploading...' : 'Upload File',
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _isUploadingCv ? null : _generateProfileCv,
-                          icon: const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF0D6B4F)),
-                          label: const Text('Profile as CV', style: TextStyle(fontSize: 12, color: Color(0xFF0D6B4F))),
+                          icon: const Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: Color(0xFF0D6B4F),
+                          ),
+                          label: const Text(
+                            'Profile as CV',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF0D6B4F),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -403,7 +516,10 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
               value: _selectedCvId,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.description_outlined),
-                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               items: _cvDocuments.map((doc) {
                 return DropdownMenuItem<int>(
@@ -439,18 +555,28 @@ class _ApplyJobSheetState extends State<ApplyJobSheet> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     )
                   : const Icon(Icons.send_rounded, size: 18),
               label: Text(
-                _selectedCvId == null ? 'Generate Profile CV & Apply' : loc.t('submit_application'),
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                _selectedCvId == null
+                    ? 'Generate Profile CV & Apply'
+                    : loc.t('submit_application'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0D6B4F),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 elevation: 2,
               ),
             ),

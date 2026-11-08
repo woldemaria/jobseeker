@@ -31,15 +31,23 @@ class ChatRepository {
   }
 
   Future<ApiResponse> joinGroup(int groupId) async {
-    return await _apiService.post('${ApiConstants.chatGroups}/$groupId/join', {});
+    return await _apiService.post(
+      '${ApiConstants.chatGroups}/$groupId/join',
+      {},
+    );
   }
 
   Future<ApiResponse> leaveGroup(int groupId) async {
-    return await _apiService.post('${ApiConstants.chatGroups}/$groupId/leave', {});
+    return await _apiService.post(
+      '${ApiConstants.chatGroups}/$groupId/leave',
+      {},
+    );
   }
 
   Future<List<ChatMessageModel>> getMessages(int groupId) async {
-    final response = await _apiService.get('${ApiConstants.chatGroups}/$groupId/messages');
+    final response = await _apiService.get(
+      '${ApiConstants.chatGroups}/$groupId/messages',
+    );
     if (response.success && response.data is List) {
       return (response.data as List)
           .map((m) => ChatMessageModel.fromJson(m))
@@ -53,10 +61,13 @@ class ChatRepository {
     required String message,
     int? sharedJobId,
   }) async {
-    return await _apiService.post('${ApiConstants.chatGroups}/$groupId/messages', {
-      'message': message,
-      'message_type': sharedJobId != null ? 'job_share' : 'text',
-      'shared_job_id': sharedJobId,
-    });
+    return await _apiService.post(
+      '${ApiConstants.chatGroups}/$groupId/messages',
+      {
+        'message': message,
+        'message_type': sharedJobId != null ? 'job_share' : 'text',
+        'shared_job_id': sharedJobId,
+      },
+    );
   }
 }

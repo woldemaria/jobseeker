@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/user_model.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
@@ -17,7 +18,8 @@ class AuthService extends ChangeNotifier {
   }
 
   UserModel? get currentUser => _currentUser;
-  bool get isAuthenticated => _storageService.getToken() != null && _currentUser != null;
+  bool get isAuthenticated =>
+      _storageService.getToken() != null && _currentUser != null;
   bool get isLoading => _isLoading;
   Locale get currentLocale => Locale(_localeCode);
 
@@ -68,6 +70,12 @@ class AuthService extends ChangeNotifier {
       final token = response.data['token'];
       if (token != null) {
         await _storageService.saveToken(token);
+        // Sync anonymous device consent with authenticated user account
+        try {
+          await _apiService.post(ApiConstants.adsConsentSync, {
+            'consent_uuid': _storageService.getConsentUuid(),
+          });
+        } catch (_) {}
       }
       if (response.data['user'] != null) {
         _currentUser = UserModel.fromJson(response.data['user']);
@@ -103,8 +111,12 @@ class AuthService extends ChangeNotifier {
         'password_confirmation': passwordConfirmation,
         'role': role,
       };
-      if (phone != null && phone.isNotEmpty) fields['phone'] = phone;
-      if (profilePhoto != null && profilePhoto.isNotEmpty) fields['profile_photo'] = profilePhoto;
+      if (phone != null && phone.isNotEmpty) {
+        fields['phone'] = phone;
+      }
+      if (profilePhoto != null && profilePhoto.isNotEmpty) {
+        fields['profile_photo'] = profilePhoto;
+      }
 
       response = await _apiService.registerMultipart(
         endpoint: ApiConstants.register,
@@ -132,6 +144,12 @@ class AuthService extends ChangeNotifier {
       final token = response.data['token'];
       if (token != null) {
         await _storageService.saveToken(token);
+        // Sync anonymous device consent with authenticated user account
+        try {
+          await _apiService.post(ApiConstants.adsConsentSync, {
+            'consent_uuid': _storageService.getConsentUuid(),
+          });
+        } catch (_) {}
       }
       if (response.data['user'] != null) {
         _currentUser = UserModel.fromJson(response.data['user']);

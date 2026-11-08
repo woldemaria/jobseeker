@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/job_model.dart';
 import '../../models/skill_model.dart';
 import '../../repositories/job_repository.dart';
@@ -92,19 +93,28 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
   }
 
   Future<void> _loadSkills() async {
-    final skills = await widget.profRepo.getAllSkills();
-    if (mounted) {
-      setState(() {
-        _allSkills = skills;
-        _isLoadingSkills = false;
-      });
+    try {
+      final skills = await widget.profRepo.getAllSkills();
+      if (mounted) {
+        setState(() {
+          _allSkills = skills;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingSkills = false);
+      }
     }
   }
 
   Future<void> _submitJob() async {
-    if (_titleController.text.trim().isEmpty || _descController.text.trim().isEmpty) {
+    if (_titleController.text.trim().isEmpty ||
+        _descController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter job title and description.')),
+        const SnackBar(
+          content: Text('Please enter job title and description.'),
+        ),
       );
       return;
     }
@@ -114,7 +124,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
 
     if (salaryMin != null && salaryMax != null && salaryMax < salaryMin) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum salary cannot be less than minimum salary.')),
+        const SnackBar(
+          content: Text('Maximum salary cannot be less than minimum salary.'),
+        ),
       );
       return;
     }
@@ -152,10 +164,22 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
     if (mounted) {
       setState(() => _isSubmitting = false);
       if (resp.success) {
+        final jobData = resp.data is Map ? resp.data as Map : null;
+        final bool isQuarantined =
+            jobData?['moderation_status'] == 'under_review';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? 'Vacancy updated successfully!' : 'Vacancy published successfully!'),
-            backgroundColor: const Color(0xFF0D6B4F),
+            content: Text(
+              isQuarantined
+                  ? 'Vacancy submitted for security review (quarantined) due to policy triggers.'
+                  : (_isEditing
+                        ? 'Vacancy updated successfully!'
+                        : 'Vacancy published successfully!'),
+            ),
+            backgroundColor: isQuarantined
+                ? Colors.amber.shade900
+                : const Color(0xFF0D6B4F),
           ),
         );
 
@@ -167,9 +191,8 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
           _clearForm();
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -198,11 +221,19 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Vacancy'),
-        content: Text('Are you sure you want to permanently delete / archive "${widget.initialJob!.title}"? This cannot be undone.'),
+        content: Text(
+          'Are you sure you want to permanently delete / archive "${widget.initialJob!.title}"? This cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
@@ -229,7 +260,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(resp.message.isNotEmpty ? resp.message : 'Failed to delete vacancy.'),
+              content: Text(
+                resp.message.isNotEmpty
+                    ? resp.message
+                    : 'Failed to delete vacancy.',
+              ),
               backgroundColor: const Color(0xFFDC2626),
             ),
           );
@@ -270,7 +305,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   value: _selectedCategory,
                   decoration: const InputDecoration(
                     labelText: 'Industry Sector / Category *',
-                    prefixIcon: Icon(Icons.category_outlined, color: Color(0xFF0D6B4F)),
+                    prefixIcon: Icon(
+                      Icons.category_outlined,
+                      color: Color(0xFF0D6B4F),
+                    ),
                   ),
                   isExpanded: true,
                   items: EthiopianJobCatalogue.categories.map((c) {
@@ -278,7 +316,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       value: c.name,
                       child: Row(
                         children: [
-                          Icon(c.icon, size: 16, color: const Color(0xFF0D6B4F)),
+                          Icon(
+                            c.icon,
+                            size: 16,
+                            color: const Color(0xFF0D6B4F),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -302,7 +344,11 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   initialValue: TextEditingValue(text: _titleController.text),
                   optionsBuilder: (TextEditingValue textEditingValue) {
                     if (textEditingValue.text.isEmpty) {
-                      return EthiopianJobCatalogue.searchTitles('', categoryName: _selectedCategory, limit: 6);
+                      return EthiopianJobCatalogue.searchTitles(
+                        '',
+                        categoryName: _selectedCategory,
+                        limit: 6,
+                      );
                     }
                     return EthiopianJobCatalogue.searchTitles(
                       textEditingValue.text,
@@ -312,27 +358,41 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   },
                   onSelected: (String selection) {
                     _titleController.text = selection;
-                    final cat = EthiopianJobCatalogue.findCategoryForTitle(selection);
+                    final cat = EthiopianJobCatalogue.findCategoryForTitle(
+                      selection,
+                    );
                     if (cat != null) {
                       setState(() => _selectedCategory = cat.name);
                     }
                   },
-                  fieldViewBuilder: (context, fieldTextEditingController, fieldFocusNode, onFieldSubmitted) {
-                    if (_titleController.text.isNotEmpty && fieldTextEditingController.text != _titleController.text) {
-                      fieldTextEditingController.text = _titleController.text;
-                    }
-                    return TextField(
-                      controller: fieldTextEditingController,
-                      focusNode: fieldFocusNode,
-                      decoration: const InputDecoration(
-                        labelText: 'Job Title *',
-                        hintText: 'e.g. Flutter Developer, Agronomist, Civil Engineer...',
-                        helperText: 'Select from 475 Ethiopian standard titles or type custom',
-                        prefixIcon: Icon(Icons.badge_outlined, color: Color(0xFF0D6B4F)),
-                      ),
-                      onChanged: (text) => _titleController.text = text,
-                    );
-                  },
+                  fieldViewBuilder:
+                      (
+                        context,
+                        fieldTextEditingController,
+                        fieldFocusNode,
+                        onFieldSubmitted,
+                      ) {
+                        if (_titleController.text.isNotEmpty &&
+                            fieldTextEditingController.text !=
+                                _titleController.text) {
+                          fieldTextEditingController.text =
+                              _titleController.text;
+                        }
+                        return TextField(
+                          controller: fieldTextEditingController,
+                          focusNode: fieldFocusNode,
+                          decoration: const InputDecoration(
+                            labelText: 'Job Title *',
+                            hintText: 'e.g. Flutter Developer, Agronomist, Civil Engineer...',
+                            helperText: 'Select from 475 Ethiopian standard titles or type custom',
+                            prefixIcon: Icon(
+                              Icons.badge_outlined,
+                              color: Color(0xFF0D6B4F),
+                            ),
+                          ),
+                          onChanged: (text) => _titleController.text = text,
+                        );
+                      },
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -343,7 +403,10 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         decoration: InputDecoration(
                           labelText: loc.t('location'),
                           suffixIcon: IconButton(
-                            icon: const Icon(Icons.map_outlined, color: Color(0xFF0D6B4F)),
+                            icon: const Icon(
+                              Icons.map_outlined,
+                              color: Color(0xFF0D6B4F),
+                            ),
                             tooltip: 'Preview on OpenStreetMap / Google Maps',
                             onPressed: () {
                               final text = _locationController.text.trim();
@@ -363,15 +426,33 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _employmentType,
-                        decoration: InputDecoration(labelText: loc.t('employment_type')),
+                        decoration: InputDecoration(
+                          labelText: loc.t('employment_type'),
+                        ),
                         items: const [
-                          DropdownMenuItem(value: 'Full-time', child: Text('Full-time')),
-                          DropdownMenuItem(value: 'Part-time', child: Text('Part-time')),
-                          DropdownMenuItem(value: 'Contract', child: Text('Contract')),
-                          DropdownMenuItem(value: 'Internship', child: Text('Internship')),
-                          DropdownMenuItem(value: 'Remote', child: Text('Remote')),
+                          DropdownMenuItem(
+                            value: 'Full-time',
+                            child: Text('Full-time'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Part-time',
+                            child: Text('Part-time'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Contract',
+                            child: Text('Contract'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Internship',
+                            child: Text('Internship'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'Remote',
+                            child: Text('Remote'),
+                          ),
                         ],
-                        onChanged: (val) => setState(() => _employmentType = val!),
+                        onChanged: (val) =>
+                            setState(() => _employmentType = val!),
                       ),
                     ),
                   ],
@@ -382,11 +463,22 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _status,
-                        decoration: const InputDecoration(labelText: 'Vacancy Status'),
+                        decoration: const InputDecoration(
+                          labelText: 'Vacancy Status',
+                        ),
                         items: const [
-                          DropdownMenuItem(value: 'published', child: Text('Published')),
-                          DropdownMenuItem(value: 'draft', child: Text('Draft')),
-                          DropdownMenuItem(value: 'closed', child: Text('Closed')),
+                          DropdownMenuItem(
+                            value: 'published',
+                            child: Text('Published'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'draft',
+                            child: Text('Draft'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'closed',
+                            child: Text('Closed'),
+                          ),
                         ],
                         onChanged: (val) => setState(() => _status = val!),
                       ),
@@ -395,8 +487,12 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: TextField(
                         controller: _expController,
-                        decoration: const InputDecoration(labelText: 'Experience (Years)'),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        decoration: const InputDecoration(
+                          labelText: 'Experience (Years)',
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                       ),
                     ),
                   ],
@@ -407,7 +503,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: TextField(
                         controller: _salaryMinController,
-                        decoration: const InputDecoration(labelText: 'Min Salary (ETB)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Min Salary (ETB)',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -415,7 +513,9 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                     Expanded(
                       child: TextField(
                         controller: _salaryMaxController,
-                        decoration: const InputDecoration(labelText: 'Max Salary (ETB)'),
+                        decoration: const InputDecoration(
+                          labelText: 'Max Salary (ETB)',
+                        ),
                         keyboardType: TextInputType.number,
                       ),
                     ),
@@ -447,13 +547,17 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                 TextField(
                   controller: _descController,
                   maxLines: 4,
-                  decoration: InputDecoration(labelText: '${loc.t('job_description')} *'),
+                  decoration: InputDecoration(
+                    labelText: '${loc.t('job_description')} *',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _respController,
                   maxLines: 3,
-                  decoration: InputDecoration(labelText: loc.t('responsibilities')),
+                  decoration: InputDecoration(
+                    labelText: loc.t('responsibilities'),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -475,7 +579,13 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   children: _allSkills.map((s) {
                     final isSelected = _selectedRequiredSkillIds.contains(s.id);
                     return FilterChip(
-                      label: Text(s.name, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+                      label: Text(
+                        s.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
+                      ),
                       selected: isSelected,
                       selectedColor: const Color(0xFF0D6B4F),
                       onSelected: (sel) {
@@ -502,9 +612,17 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                   spacing: 6,
                   runSpacing: 6,
                   children: _allSkills.map((s) {
-                    final isSelected = _selectedPreferredSkillIds.contains(s.id);
+                    final isSelected = _selectedPreferredSkillIds.contains(
+                      s.id,
+                    );
                     return FilterChip(
-                      label: Text(s.name, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+                      label: Text(
+                        s.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSelected ? Colors.white : Colors.black87,
+                        ),
+                      ),
                       selected: isSelected,
                       selectedColor: const Color(0xFFD97706),
                       onSelected: (sel) {
@@ -528,10 +646,16 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: _isSubmitting ? null : _deleteVacancy,
-                          icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Color(0xFFDC2626),
+                          ),
                           label: const Text(
                             'Delete Vacancy',
-                            style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Color(0xFFDC2626),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: Color(0xFFDC2626)),
@@ -553,9 +677,15 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 )
-                              : const Text('Update Vacancy', style: TextStyle(fontWeight: FontWeight.bold)),
+                              : const Text(
+                                  'Update Vacancy',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                         ),
                       ),
                     ],
@@ -572,9 +702,15 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : Text(loc.t('create_job'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                        : Text(
+                            loc.t('create_job'),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
                 const SizedBox(height: 24),
               ],

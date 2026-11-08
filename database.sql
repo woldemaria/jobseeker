@@ -242,13 +242,24 @@ CREATE TABLE IF NOT EXISTS jobs (
     currency VARCHAR(10) NOT NULL DEFAULT 'ETB',
     deadline DATE NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'draft',
+    fraud_score SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    fraud_risk_level VARCHAR(20) NOT NULL DEFAULT 'low',
+    fraud_indicators JSON NULL,
+    is_flagged BOOLEAN NOT NULL DEFAULT FALSE,
+    moderation_status VARCHAR(30) NOT NULL DEFAULT 'clean',
+    moderated_by BIGINT UNSIGNED NULL,
+    moderated_at TIMESTAMP NULL,
+    moderation_notes TEXT NULL,
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     FOREIGN KEY (employer_id) REFERENCES employers(id) ON DELETE RESTRICT,
+    FOREIGN KEY (moderated_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_job_status_deadline (status, deadline),
     INDEX idx_job_location (location),
     INDEX idx_job_employer (employer_id),
+    INDEX idx_jobs_fraud_flag_score (is_flagged, fraud_score),
+    INDEX idx_jobs_moderation_status (moderation_status),
     CONSTRAINT chk_job_salary CHECK (
         (salary_min IS NULL OR salary_min >= 0) AND
         (salary_max IS NULL OR salary_max >= 0) AND
@@ -281,6 +292,20 @@ CREATE TABLE IF NOT EXISTS applications (
     cv_document_id BIGINT UNSIGNED NOT NULL,
     cover_letter TEXT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'submitted',
+    interview_at DATETIME NULL,
+    interview_type VARCHAR(50) NULL,
+    interview_location VARCHAR(255) NULL,
+    interview_notes TEXT NULL,
+    interview_status VARCHAR(30) NULL DEFAULT 'scheduled',
+    offer_salary DECIMAL(12,2) NULL,
+    offer_benefits TEXT NULL,
+    offer_conditions TEXT NULL,
+    offer_start_date DATE NULL,
+    offer_status VARCHAR(30) NOT NULL DEFAULT 'none',
+    offer_notes TEXT NULL,
+    candidate_response_notes TEXT NULL,
+    offered_at TIMESTAMP NULL,
+    offer_responded_at TIMESTAMP NULL,
     applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
@@ -318,6 +343,25 @@ CREATE TABLE IF NOT EXISTS saved_jobs (
     FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 19b. Job Alerts Table (Custom Job Alerts)
+CREATE TABLE IF NOT EXISTS job_alerts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    keyword VARCHAR(150) NULL,
+    category_id BIGINT UNSIGNED NULL,
+    location VARCHAR(150) NULL,
+    min_salary DECIMAL(12,2) NULL,
+    frequency VARCHAR(30) NOT NULL DEFAULT 'daily',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    last_notified_at TIMESTAMP NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_job_alerts_user_active (user_id, is_active),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES job_categories(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- 20. Notifications Table
 CREATE TABLE IF NOT EXISTS notifications (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -343,6 +387,9 @@ CREATE TABLE IF NOT EXISTS reports (
     description TEXT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'pending',
     reviewed_by BIGINT UNSIGNED NULL,
+    action_taken VARCHAR(50) NULL,
+    resolution_notes TEXT NULL,
+    resolved_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
     FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE RESTRICT,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../core/theme/app_theme.dart';
 import '../../models/advertisement_model.dart';
 import '../../repositories/advertisement_repository.dart';
@@ -10,16 +11,24 @@ class AdvertisementManagementScreen extends StatefulWidget {
   const AdvertisementManagementScreen({super.key});
 
   @override
-  State<AdvertisementManagementScreen> createState() => _AdvertisementManagementScreenState();
+  State<AdvertisementManagementScreen> createState() =>
+      _AdvertisementManagementScreenState();
 }
 
-class _AdvertisementManagementScreenState extends State<AdvertisementManagementScreen> {
+class _AdvertisementManagementScreenState
+    extends State<AdvertisementManagementScreen> {
   List<AdvertisementModel> _ads = [];
   bool _isLoading = true;
   String _selectedStatus = 'all';
   String _selectedPlacement = 'all';
 
-  final List<String> _statuses = ['all', 'active', 'paused', 'scheduled', 'expired'];
+  final List<String> _statuses = [
+    'all',
+    'active',
+    'paused',
+    'scheduled',
+    'expired',
+  ];
   final List<String> _placements = ['all', 'hero', 'dashboard', 'job_list'];
 
   @override
@@ -30,21 +39,32 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
 
   Future<void> _loadAds() async {
     setState(() => _isLoading = true);
-    final adRepo = Provider.of<AdvertisementRepository>(context, listen: false);
+    try {
+      final adRepo = Provider.of<AdvertisementRepository>(
+        context,
+        listen: false,
+      );
 
-    final statusParam = _selectedStatus == 'all' ? null : _selectedStatus;
-    final placementParam = _selectedPlacement == 'all' ? null : _selectedPlacement;
+      final statusParam = _selectedStatus == 'all' ? null : _selectedStatus;
+      final placementParam = _selectedPlacement == 'all'
+          ? null
+          : _selectedPlacement;
 
-    final ads = await adRepo.getAdminAdvertisements(
-      status: statusParam,
-      placement: placementParam,
-    );
+      final ads = await adRepo.getAdminAdvertisements(
+        status: statusParam,
+        placement: placementParam,
+      );
 
-    if (mounted) {
-      setState(() {
-        _ads = ads;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _ads = ads;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -57,10 +77,14 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(nextStatus == 'active'
-                ? 'Campaign "${ad.title}" activated!'
-                : 'Campaign "${ad.title}" paused.'),
-            backgroundColor: nextStatus == 'active' ? const Color(0xFF0D6B4F) : const Color(0xFFD97706),
+            content: Text(
+              nextStatus == 'active'
+                  ? 'Campaign "${ad.title}" activated!'
+                  : 'Campaign "${ad.title}" paused.',
+            ),
+            backgroundColor: nextStatus == 'active'
+                ? const Color(0xFF0D6B4F)
+                : const Color(0xFFD97706),
           ),
         );
         _loadAds();
@@ -80,11 +104,19 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Campaign?'),
-        content: Text('Are you sure you want to delete "${ad.title}"? This cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${ad.title}"? This cannot be undone.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
@@ -93,7 +125,10 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
     );
 
     if (confirm == true) {
-      final adRepo = Provider.of<AdvertisementRepository>(context, listen: false);
+      final adRepo = Provider.of<AdvertisementRepository>(
+        context,
+        listen: false,
+      );
       final ok = await adRepo.deleteAdvertisement(ad.id);
       if (mounted) {
         if (ok) {
@@ -105,7 +140,9 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
           );
           _loadAds();
         } else {
-          final errorMsg = adRepo.lastErrorMessage ?? 'Failed to delete campaign. Please check permissions.';
+          final errorMsg =
+              adRepo.lastErrorMessage ??
+              'Failed to delete campaign. Please check permissions.';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(errorMsg),
@@ -127,7 +164,11 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
     if (saved == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ad == null ? 'Campaign published successfully!' : 'Campaign "${ad.title}" updated successfully!'),
+          content: Text(
+            ad == null
+                ? 'Campaign published successfully!'
+                : 'Campaign "${ad.title}" updated successfully!',
+          ),
           backgroundColor: const Color(0xFF0D6B4F),
         ),
       );
@@ -143,7 +184,10 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
           children: [
             Icon(Icons.visibility_outlined, color: Color(0xFF2563EB)),
             SizedBox(width: 8),
-            Text('Campaign Banner Preview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Campaign Banner Preview',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         content: SizedBox(
@@ -174,7 +218,11 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                         fit: BoxFit.cover,
                         errorBuilder: (_, error, stackTrace) => Container(
                           color: const Color(0xFF0D6B4F),
-                          child: const Icon(Icons.campaign, size: 60, color: Colors.white24),
+                          child: const Icon(
+                            Icons.campaign,
+                            size: 60,
+                            color: Colors.white24,
+                          ),
                         ),
                       ),
                       Container(
@@ -199,27 +247,44 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                if (ad.badgeText != null && ad.badgeText!.isNotEmpty)
+                                if (ad.badgeText != null &&
+                                    ad.badgeText!.isNotEmpty)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF0D6B4F),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
                                       ad.badgeText!,
-                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   )
                                 else
                                   const SizedBox.shrink(),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.black54,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text('Promoted', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                                  child: const Text(
+                                    'Promoted',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -230,15 +295,23 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                                   ad.title,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                if (ad.subtitle != null && ad.subtitle!.isNotEmpty) ...[
+                                if (ad.subtitle != null &&
+                                    ad.subtitle!.isNotEmpty) ...[
                                   const SizedBox(height: 3),
                                   Text(
                                     ad.subtitle!,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11),
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.9),
+                                      fontSize: 11,
+                                    ),
                                   ),
                                 ],
                                 const SizedBox(height: 8),
@@ -246,7 +319,9 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                                   onPressed: () {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Campaign CTA [${ad.ctaType.toUpperCase()}]: ${ad.ctaTarget}'),
+                                        content: Text(
+                                          'Campaign CTA [${ad.ctaType.toUpperCase()}]: ${ad.ctaTarget}',
+                                        ),
                                         duration: const Duration(seconds: 3),
                                       ),
                                     );
@@ -254,10 +329,21 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.white,
                                     foregroundColor: const Color(0xFF0D6B4F),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
-                                  child: Text(ad.ctaText, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                  child: Text(
+                                    ad.ctaText,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -274,15 +360,24 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                 runSpacing: 4,
                 children: [
                   Chip(
-                    label: Text('Placement: ${ad.placement}', style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      'Placement: ${ad.placement}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     backgroundColor: Colors.grey.shade100,
                   ),
                   Chip(
-                    label: Text('Category: ${ad.category}', style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      'Category: ${ad.category}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     backgroundColor: Colors.grey.shade100,
                   ),
                   Chip(
-                    label: Text('Role: ${ad.targetRole}', style: const TextStyle(fontSize: 11)),
+                    label: Text(
+                      'Role: ${ad.targetRole}',
+                      style: const TextStyle(fontSize: 11),
+                    ),
                     backgroundColor: Colors.grey.shade100,
                   ),
                 ],
@@ -300,8 +395,15 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
               Navigator.pop(ctx);
               _deleteAd(ad);
             },
-            icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFDC2626)),
-            label: const Text('Delete', style: TextStyle(color: Color(0xFFDC2626), fontSize: 13)),
+            icon: const Icon(
+              Icons.delete_outline,
+              size: 16,
+              color: Color(0xFFDC2626),
+            ),
+            label: const Text(
+              'Delete',
+              style: TextStyle(color: Color(0xFFDC2626), fontSize: 13),
+            ),
             style: OutlinedButton.styleFrom(
               visualDensity: VisualDensity.compact,
               side: const BorderSide(color: Color(0xFFDC2626)),
@@ -313,21 +415,29 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
               _toggleStatus(ad);
             },
             icon: Icon(
-              ad.status == 'active' ? Icons.pause_circle_outline : Icons.play_circle_outline,
+              ad.status == 'active'
+                  ? Icons.pause_circle_outline
+                  : Icons.play_circle_outline,
               size: 16,
-              color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+              color: ad.status == 'active'
+                  ? const Color(0xFFD97706)
+                  : const Color(0xFF0D6B4F),
             ),
             label: Text(
               ad.status == 'active' ? 'Pause' : 'Activate',
               style: TextStyle(
                 fontSize: 13,
-                color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+                color: ad.status == 'active'
+                    ? const Color(0xFFD97706)
+                    : const Color(0xFF0D6B4F),
               ),
             ),
             style: OutlinedButton.styleFrom(
               visualDensity: VisualDensity.compact,
               side: BorderSide(
-                color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+                color: ad.status == 'active'
+                    ? const Color(0xFFD97706)
+                    : const Color(0xFF0D6B4F),
               ),
             ),
           ),
@@ -338,7 +448,9 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
             },
             icon: const Icon(Icons.edit, size: 16),
             label: const Text('Edit Campaign', style: TextStyle(fontSize: 13)),
-            style: ElevatedButton.styleFrom(visualDensity: VisualDensity.compact),
+            style: ElevatedButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+            ),
           ),
         ],
       ),
@@ -357,7 +469,9 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdvertisementAnalyticsScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AdvertisementAnalyticsScreen(),
+                ),
               );
             },
           ),
@@ -432,33 +546,37 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _ads.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.campaign_outlined, size: 64, color: Colors.grey),
-                            const SizedBox(height: 12),
-                            const Text('No advertisement campaigns found.'),
-                            const SizedBox(height: 12),
-                            ElevatedButton.icon(
-                              onPressed: () => _openCreateOrEditDialog(),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Create First Campaign'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.campaign_outlined,
+                          size: 64,
+                          color: Colors.grey,
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadAds,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _ads.length,
-                          itemBuilder: (context, index) {
-                            final ad = _ads[index];
-                            return _buildAdCard(ad);
-                          },
+                        const SizedBox(height: 12),
+                        const Text('No advertisement campaigns found.'),
+                        const SizedBox(height: 12),
+                        ElevatedButton.icon(
+                          onPressed: () => _openCreateOrEditDialog(),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Create First Campaign'),
                         ),
-                      ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _loadAds,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _ads.length,
+                      itemBuilder: (context, index) {
+                        final ad = _ads[index];
+                        return _buildAdCard(ad);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -489,7 +607,10 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey.shade200,
-                    child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -499,20 +620,30 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                 Expanded(
                   child: Text(
                     ad.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     ad.status.toUpperCase(),
-                    style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -560,10 +691,18 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
               children: [
                 OutlinedButton.icon(
                   onPressed: () => _previewCampaign(ad),
-                  icon: const Icon(Icons.visibility_outlined, size: 16, color: Color(0xFF2563EB)),
+                  icon: const Icon(
+                    Icons.visibility_outlined,
+                    size: 16,
+                    color: Color(0xFF2563EB),
+                  ),
                   label: const Text(
                     'Preview',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF2563EB)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2563EB),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
@@ -573,31 +712,47 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                 OutlinedButton.icon(
                   onPressed: () => _toggleStatus(ad),
                   icon: Icon(
-                    ad.status == 'active' ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                    ad.status == 'active'
+                        ? Icons.pause_circle_outline
+                        : Icons.play_circle_outline,
                     size: 16,
-                    color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+                    color: ad.status == 'active'
+                        ? const Color(0xFFD97706)
+                        : const Color(0xFF0D6B4F),
                   ),
                   label: Text(
                     ad.status == 'active' ? 'Pause' : 'Activate',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+                      color: ad.status == 'active'
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF0D6B4F),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     side: BorderSide(
-                      color: ad.status == 'active' ? const Color(0xFFD97706) : const Color(0xFF0D6B4F),
+                      color: ad.status == 'active'
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF0D6B4F),
                     ),
                   ),
                 ),
                 OutlinedButton.icon(
                   onPressed: () => _openCreateOrEditDialog(ad),
-                  icon: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF0D6B4F)),
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: Color(0xFF0D6B4F),
+                  ),
                   label: const Text(
                     'Edit',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0D6B4F)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0D6B4F),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,
@@ -606,10 +761,18 @@ class _AdvertisementManagementScreenState extends State<AdvertisementManagementS
                 ),
                 OutlinedButton.icon(
                   onPressed: () => _deleteAd(ad),
-                  icon: const Icon(Icons.delete_outline, size: 16, color: Color(0xFFDC2626)),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 16,
+                    color: Color(0xFFDC2626),
+                  ),
                   label: const Text(
                     'Delete',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFDC2626)),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFDC2626),
+                    ),
                   ),
                   style: OutlinedButton.styleFrom(
                     visualDensity: VisualDensity.compact,

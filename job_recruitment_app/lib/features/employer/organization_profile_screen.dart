@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/api_service.dart';
 import '../../core/constants/api_constants.dart';
 import '../../l10n/app_localizations.dart';
@@ -11,7 +12,8 @@ class OrganizationProfileScreen extends StatefulWidget {
   const OrganizationProfileScreen({super.key, required this.apiService});
 
   @override
-  State<OrganizationProfileScreen> createState() => _OrganizationProfileScreenState();
+  State<OrganizationProfileScreen> createState() =>
+      _OrganizationProfileScreenState();
 }
 
 class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
@@ -47,9 +49,9 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final resp = await widget.apiService.get(ApiConstants.employerProfile);
-    if (mounted) {
-      if (resp.success && resp.data != null) {
+    try {
+      final resp = await widget.apiService.get(ApiConstants.employerProfile);
+      if (mounted && resp.success && resp.data != null) {
         final data = resp.data;
         _nameController.text = data['organization_name'] ?? '';
         _typeController.text = data['organization_type'] ?? '';
@@ -60,7 +62,11 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
         _addressController.text = data['address'] ?? '';
         _verificationStatus = data['verification_status'] ?? 'pending';
       }
-      setState(() => _isLoading = false);
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -83,9 +89,8 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
           const SnackBar(content: Text('Organization profile updated!')),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -103,15 +108,22 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
               children: [
                 Card(
                   child: ListTile(
-                    leading: const Icon(Icons.verified_user, color: Color(0xFF0D6B4F)),
+                    leading: const Icon(
+                      Icons.verified_user,
+                      color: Color(0xFF0D6B4F),
+                    ),
                     title: Text(loc.t('verification_status')),
-                    subtitle: Text('Status: ${_verificationStatus.toUpperCase()}'),
+                    subtitle: Text(
+                      'Status: ${_verificationStatus.toUpperCase()}',
+                    ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => EmployerVerificationScreen(apiService: widget.apiService),
+                          builder: (_) => EmployerVerificationScreen(
+                            apiService: widget.apiService,
+                          ),
                         ),
                       ).then((_) => _load());
                     },
@@ -120,36 +132,47 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: 'Organization Name *'),
+                  decoration: const InputDecoration(
+                    labelText: 'Organization Name *',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _typeController,
                   decoration: const InputDecoration(
-                    labelText: 'Organization Type (e.g. Private, NGO, Government)',
+                    labelText:
+                        'Organization Type (e.g. Private, NGO, Government)',
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _regNumController,
-                  decoration: const InputDecoration(labelText: 'Business Registration / License Number'),
+                  decoration: const InputDecoration(
+                    labelText: 'Business Registration / License Number',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Organization Contact Email'),
+                  decoration: const InputDecoration(
+                    labelText: 'Organization Contact Email',
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: 'Contact Phone Number'),
+                  decoration: const InputDecoration(
+                    labelText: 'Contact Phone Number',
+                  ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _websiteController,
-                  decoration: const InputDecoration(labelText: 'Official Website URL'),
+                  decoration: const InputDecoration(
+                    labelText: 'Official Website URL',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -158,7 +181,10 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
                   decoration: InputDecoration(
                     labelText: 'Headquarters Physical Address',
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.map_outlined, color: Color(0xFF0D6B4F)),
+                      icon: const Icon(
+                        Icons.map_outlined,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       tooltip: 'View on OpenStreetMap / Google Maps',
                       onPressed: () {
                         final addr = _addressController.text.trim();
@@ -182,7 +208,10 @@ class _OrganizationProfileScreenState extends State<OrganizationProfileScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(loc.t('save')),
                 ),

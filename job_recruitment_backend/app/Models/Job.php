@@ -26,6 +26,14 @@ class Job extends Model
         'currency',
         'deadline',
         'status',
+        'fraud_score',
+        'fraud_risk_level',
+        'fraud_indicators',
+        'is_flagged',
+        'moderation_status',
+        'moderated_by',
+        'moderated_at',
+        'moderation_notes',
         'published_at',
         'latitude',
         'longitude',
@@ -41,7 +49,21 @@ class Job extends Model
         'longitude' => 'float',
         'deadline' => 'date',
         'published_at' => 'datetime',
+        'fraud_score' => 'integer',
+        'fraud_indicators' => 'array',
+        'is_flagged' => 'boolean',
+        'moderated_at' => 'datetime',
     ];
+
+    public function moderator()
+    {
+        return $this->belongsTo(User::class, 'moderated_by');
+    }
+
+    public function reports()
+    {
+        return $this->hasMany(Report::class, 'job_id');
+    }
 
     public function employer()
     {
@@ -93,6 +115,21 @@ class Job extends Model
     public function scopePublished($query)
     {
         return $query->where('status', 'published')
+                     ->where('moderation_status', '!=', 'fraudulent')
                      ->where('deadline', '>=', now()->toDateString());
+    }
+
+    public function scopeFlagged($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('is_flagged', true)
+              ->orWhere('fraud_score', '>=', 50)
+              ->orWhereIn('moderation_status', ['flagged', 'under_review', 'fraudulent']);
+        });
+    }
+
+    public function scopeHighRisk($query)
+    {
+        return $query->whereIn('fraud_risk_level', ['high', 'critical']);
     }
 }

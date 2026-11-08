@@ -4,11 +4,7 @@ class MatchScoreBadge extends StatelessWidget {
   final double score;
   final VoidCallback? onTap;
 
-  const MatchScoreBadge({
-    super.key,
-    required this.score,
-    this.onTap,
-  });
+  const MatchScoreBadge({super.key, required this.score, this.onTap});
 
   Color _getColor() {
     if (score >= 80) return const Color(0xFF0D6B4F); // Green

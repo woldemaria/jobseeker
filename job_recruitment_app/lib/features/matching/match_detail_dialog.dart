@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../l10n/app_localizations.dart';
 
 class MatchDetailDialog extends StatelessWidget {
@@ -11,7 +12,11 @@ class MatchDetailDialog extends StatelessWidget {
     required this.matchAnalysis,
   });
 
-  static void show(BuildContext context, String jobTitle, Map<String, dynamic> matchAnalysis) {
+  static void show(
+    BuildContext context,
+    String jobTitle,
+    Map<String, dynamic> matchAnalysis,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -19,14 +24,17 @@ class MatchDetailDialog extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => MatchDetailDialog(
-        jobTitle: jobTitle,
-        matchAnalysis: matchAnalysis,
-      ),
+      builder: (ctx) =>
+          MatchDetailDialog(jobTitle: jobTitle, matchAnalysis: matchAnalysis),
     );
   }
 
-  Widget _buildCriterionBar(String title, String weight, double score, Color color) {
+  Widget _buildCriterionBar(
+    String title,
+    String weight,
+    double score,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Column(
@@ -37,11 +45,18 @@ class MatchDetailDialog extends StatelessWidget {
             children: [
               Text(
                 '$title ($weight)',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               Text(
                 '${score.toStringAsFixed(0)}%',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: color,
+                ),
               ),
             ],
           ),
@@ -63,7 +78,8 @@ class MatchDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final totalScore = double.tryParse(matchAnalysis['match_score'].toString()) ?? 0.0;
+    final totalScore =
+        double.tryParse(matchAnalysis['match_score'].toString()) ?? 0.0;
     final breakdown = matchAnalysis['breakdown'] as Map<String, dynamic>? ?? {};
     final explanation = matchAnalysis['explanation']?.toString() ?? '';
 
@@ -114,7 +130,10 @@ class MatchDetailDialog extends StatelessWidget {
                         ),
                         Text(
                           jobTitle,
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -122,7 +141,10 @@ class MatchDetailDialog extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0D6B4F).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
@@ -174,32 +196,58 @@ class MatchDetailDialog extends StatelessWidget {
               if (matchingSkills.isNotEmpty) ...[
                 Text(
                   loc.t('matching_skills'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: matchingSkills.map((s) => Chip(
-                    backgroundColor: const Color(0xFFDCFCE7),
-                    label: Text(s.toString(), style: const TextStyle(color: Color(0xFF166534), fontSize: 12)),
-                  )).toList(),
+                  children: matchingSkills
+                      .map(
+                        (s) => Chip(
+                          backgroundColor: const Color(0xFFDCFCE7),
+                          label: Text(
+                            s.toString(),
+                            style: const TextStyle(
+                              color: Color(0xFF166534),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 12),
               ],
               if (missingPref.isNotEmpty) ...[
                 Text(
                   loc.t('missing_skills'),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 4,
-                  children: missingPref.map((s) => Chip(
-                    backgroundColor: const Color(0xFFFEF3C7),
-                    label: Text(s.toString(), style: const TextStyle(color: Color(0xFF92400E), fontSize: 12)),
-                  )).toList(),
+                  children: missingPref
+                      .map(
+                        (s) => Chip(
+                          backgroundColor: const Color(0xFFFEF3C7),
+                          label: Text(
+                            s.toString(),
+                            style: const TextStyle(
+                              color: Color(0xFF92400E),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
                 ),
                 const SizedBox(height: 12),
               ],
@@ -216,12 +264,19 @@ class MatchDetailDialog extends StatelessWidget {
                     children: [
                       const Text(
                         'Recommendation Summary:',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF334155)),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Color(0xFF334155),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         explanation,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ],
                   ),

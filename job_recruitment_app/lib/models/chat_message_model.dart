@@ -37,7 +37,7 @@ class ChatMessageModel {
 
     JobModel? job;
     if (json['shared_job'] != null && json['shared_job'] is Map) {
-      job = JobModel.fromJson(json['shared_job']);
+      job = JobModel.fromJson(Map<String, dynamic>.from(json['shared_job']));
     }
 
     return ChatMessageModel(

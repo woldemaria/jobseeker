@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../models/chat_group_model.dart';
 import '../../models/job_model.dart';
 import '../../repositories/chat_repository.dart';
@@ -9,10 +10,7 @@ import '../../repositories/chat_repository.dart';
 class ShareWithFriendsModal extends StatefulWidget {
   final JobModel job;
 
-  const ShareWithFriendsModal({
-    super.key,
-    required this.job,
-  });
+  const ShareWithFriendsModal({super.key, required this.job});
 
   static void show(BuildContext context, JobModel job) {
     showModalBottomSheet(
@@ -72,7 +70,8 @@ class _ShareWithFriendsModalState extends State<ShareWithFriendsModal> {
 🔗 View & Apply Online: $jobUrl
 
 Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
-'''.trim();
+'''
+        .trim();
   }
 
   Future<void> _shareToWhatsApp() async {
@@ -81,43 +80,69 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
     final uriSecondary = Uri.parse('https://wa.me/?text=$text');
 
     try {
-      bool launched = await launchUrl(uriPrimary, mode: LaunchMode.externalApplication);
+      bool launched = await launchUrl(
+        uriPrimary,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
-        launched = await launchUrl(uriSecondary, mode: LaunchMode.externalApplication);
+        launched = await launchUrl(
+          uriSecondary,
+          mode: LaunchMode.externalApplication,
+        );
       }
       if (!launched) {
-        _copyToClipboard('WhatsApp could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'WhatsApp could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     } catch (_) {
       try {
-        final fallback = await launchUrl(uriSecondary, mode: LaunchMode.platformDefault);
+        final fallback = await launchUrl(
+          uriSecondary,
+          mode: LaunchMode.platformDefault,
+        );
         if (!fallback) {
-          _copyToClipboard('WhatsApp could not be opened. Vacancy details copied to clipboard!');
+          _copyToClipboard(
+            'WhatsApp could not be opened. Vacancy details copied to clipboard!',
+          );
         }
       } catch (_) {
-        _copyToClipboard('WhatsApp could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'WhatsApp could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     }
   }
 
   Future<void> _shareToTelegram() async {
-    final jobUrl = Uri.encodeComponent('http://localhost:3000/#/jobs/${widget.job.id}');
+    final jobUrl = Uri.encodeComponent(
+      'http://localhost:3000/#/jobs/${widget.job.id}',
+    );
     final text = Uri.encodeComponent(_getShareText());
     final url = Uri.parse('https://t.me/share/url?url=$jobUrl&text=$text');
 
     try {
-      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
-        _copyToClipboard('Telegram could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'Telegram could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     } catch (_) {
       try {
         final fallback = await launchUrl(url, mode: LaunchMode.platformDefault);
         if (!fallback) {
-          _copyToClipboard('Telegram could not be opened. Vacancy details copied to clipboard!');
+          _copyToClipboard(
+            'Telegram could not be opened. Vacancy details copied to clipboard!',
+          );
         }
       } catch (_) {
-        _copyToClipboard('Telegram could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'Telegram could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     }
   }
@@ -128,18 +153,27 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
     final url = Uri.parse('mailto:?subject=$subject&body=$body');
 
     try {
-      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        url,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
-        _copyToClipboard('Email client could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'Email client could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     } catch (_) {
       try {
         final fallback = await launchUrl(url, mode: LaunchMode.platformDefault);
         if (!fallback) {
-          _copyToClipboard('Email client could not be opened. Vacancy details copied to clipboard!');
+          _copyToClipboard(
+            'Email client could not be opened. Vacancy details copied to clipboard!',
+          );
         }
       } catch (_) {
-        _copyToClipboard('Email client could not be opened. Vacancy details copied to clipboard!');
+        _copyToClipboard(
+          'Email client could not be opened. Vacancy details copied to clipboard!',
+        );
       }
     }
   }
@@ -161,7 +195,8 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
 
     final resp = await chatRepo.sendMessage(
       groupId: group.id,
-      message: '📢 Check out this vacancy: ${widget.job.title} at ${widget.job.employer?.organizationName ?? "Leading Employer"}',
+      message:
+          '📢 Check out this vacancy: ${widget.job.title} at ${widget.job.employer?.organizationName ?? "Leading Employer"}',
       sharedJobId: widget.job.id,
     );
 
@@ -178,7 +213,11 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(resp.message.isNotEmpty ? resp.message : 'Failed to share to group.'),
+            content: Text(
+              resp.message.isNotEmpty
+                  ? resp.message
+                  : 'Failed to share to group.',
+            ),
             backgroundColor: const Color(0xFFDC2626),
           ),
         );
@@ -218,7 +257,11 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
                   color: const Color(0xFF0D6B4F).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.share, color: Color(0xFF0D6B4F), size: 22),
+                child: const Icon(
+                  Icons.share,
+                  color: Color(0xFF0D6B4F),
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               const Expanded(
@@ -227,7 +270,10 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
                   children: [
                     Text(
                       'Share with Friends',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     Text(
                       'Send vacancy via apps or career group chats',
@@ -281,7 +327,11 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
               SizedBox(width: 8),
               Text(
                 'Share into Community & Friends Group',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
               ),
             ],
           ),
@@ -318,23 +368,56 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       radius: 18,
-                      backgroundColor: const Color(0xFF0D6B4F).withOpacity(0.12),
+                      backgroundColor: const Color(0xFF0D6B4F)
+                          .withOpacity(0.12),
                       child: Text(
-                        group.name.isNotEmpty ? group.name[0].toUpperCase() : 'G',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D6B4F), fontSize: 13),
+                        group.name.isNotEmpty
+                            ? group.name[0].toUpperCase()
+                            : 'G',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0D6B4F),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                    title: Text(group.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1),
-                    subtitle: Text('${group.memberCount} members', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                    title: Text(
+                      group.name,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                    ),
+                    subtitle: Text(
+                      '${group.memberCount} members',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
                     trailing: isSharing
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : OutlinedButton(
                             onPressed: () => _shareToChatGroup(group),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               side: const BorderSide(color: Color(0xFF0D6B4F)),
                             ),
-                            child: const Text('Send', style: TextStyle(fontSize: 12, color: Color(0xFF0D6B4F))),
+                            child: const Text(
+                              'Send',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF0D6B4F),
+                              ),
+                            ),
                           ),
                   );
                 },
@@ -366,7 +449,11 @@ Shared via JobSeeker Ethiopia - Smart Skills-Based Recruitment
             const SizedBox(height: 6),
             Text(
               label,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: Color(0xFF334155)),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF334155),
+              ),
             ),
           ],
         ),

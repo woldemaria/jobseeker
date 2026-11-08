@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Job;
 use App\Models\JobSkill;
 use App\Models\SavedJob;
+use App\Services\FraudDetectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -184,6 +185,23 @@ class JobController extends BaseApiController
             $status = $validated['status'] ?? 'published';
             $publishedAt = $status === 'published' ? now() : null;
 
+            // Fraud Detection Analysis
+            $fraudService = app(FraudDetectionService::class);
+            $fraudAssessment = $fraudService->assessJobData($validated, $employer);
+            $fraudScore = $fraudAssessment['fraud_score'];
+            $fraudRiskLevel = $fraudAssessment['fraud_risk_level'];
+            $fraudIndicators = $fraudAssessment['fraud_indicators'];
+            $isFlagged = $fraudAssessment['is_flagged'];
+            $moderationStatus = 'clean';
+
+            if ($fraudAssessment['recommended_action'] === 'auto_quarantine') {
+                $moderationStatus = 'under_review';
+                $status = 'draft';
+                $publishedAt = null;
+            } elseif ($isFlagged) {
+                $moderationStatus = 'flagged';
+            }
+
             $categoryId = $validated['category_id'] ?? null;
             $categoryName = $validated['category'] ?? null;
             if ($categoryId && empty($categoryName)) {
@@ -213,6 +231,11 @@ class JobController extends BaseApiController
                 'currency' => $validated['currency'] ?? 'ETB',
                 'deadline' => $validated['deadline'],
                 'status' => $status,
+                'fraud_score' => $fraudScore,
+                'fraud_risk_level' => $fraudRiskLevel,
+                'fraud_indicators' => $fraudIndicators,
+                'is_flagged' => $isFlagged,
+                'moderation_status' => $moderationStatus,
                 'published_at' => $publishedAt,
             ]);
 
@@ -301,6 +324,10 @@ class JobController extends BaseApiController
             }
 
             $job->update($validated);
+
+            // Re-assess fraud score upon updating details
+            $fraudService = app(FraudDetectionService::class);
+            $fraudService->applyToJob($job);
 
             if (isset($validated['skills'])) {
                 JobSkill::where('job_id', $job->id)->delete();
@@ -420,5 +447,48 @@ class JobController extends BaseApiController
             ->get();
 
         return $this->successResponse($jobs, 'Employer vacancies retrieved.');
+    }
+
+    /**
+     * Pre-check job posting content for fraud / scam indicators before creation.
+     */
+    public function checkFraud(Request $request, FraudDetectionService $fraudService): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:200',
+            'description' => 'required|string',
+            'requirements' => 'nullable|string',
+            'responsibilities' => 'nullable|string',
+            'salary_max' => 'nullable|numeric|min:0',
+            'salary_min' => 'nullable|numeric|min:0',
+            'experience_required' => 'nullable|numeric|min:0',
+        ]);
+
+        $employer = $request->user()?->employers()?->first();
+        $assessment = $fraudService->assessJobData($validated, $employer);
+
+        return $this->successResponse($assessment, 'Fraud risk assessment calculated successfully.');
+    }
+
+    /**
+     * Get detailed fraud risk assessment and safety transparency for a job.
+     */
+    public function fraudAssessment(Request $request, int $id, FraudDetectionService $fraudService): JsonResponse
+    {
+        $job = Job::with('employer')->findOrFail($id);
+        $assessment = $fraudService->assessJob($job);
+
+        return $this->successResponse([
+            'job_id' => $job->id,
+            'title' => $job->title,
+            'employer_name' => $job->employer?->organization_name,
+            'is_verified_employer' => $job->employer?->verification_status === 'approved',
+            'moderation_status' => $job->moderation_status,
+            'is_flagged' => $job->is_flagged,
+            'fraud_score' => $job->fraud_score,
+            'fraud_risk_level' => $job->fraud_risk_level,
+            'fraud_indicators' => $job->fraud_indicators ?? $assessment['fraud_indicators'],
+            'safety_checklist' => $assessment['safety_checklist'],
+        ], 'Fraud risk assessment details retrieved.');
     }
 }

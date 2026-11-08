@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
@@ -57,20 +58,12 @@ class _JobSeekerMainScreenState extends State<JobSeekerMainScreen> {
         appRepo: widget.appRepo,
         profRepo: widget.profRepo,
       ),
-      MyApplicationsScreen(
-        appRepo: widget.appRepo,
-      ),
-      ProfileScreen(
-        profRepo: widget.profRepo,
-        authService: widget.authService,
-      ),
+      MyApplicationsScreen(appRepo: widget.appRepo),
+      ProfileScreen(profRepo: widget.profRepo, authService: widget.authService),
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
@@ -88,12 +81,18 @@ class _JobSeekerMainScreenState extends State<JobSeekerMainScreen> {
           ),
           NavigationDestination(
             icon: const Icon(Icons.auto_awesome_outlined),
-            selectedIcon: const Icon(Icons.auto_awesome, color: Color(0xFF0D6B4F)),
+            selectedIcon: const Icon(
+              Icons.auto_awesome,
+              color: Color(0xFF0D6B4F),
+            ),
             label: loc.t('recommendations'),
           ),
           NavigationDestination(
             icon: const Icon(Icons.assignment_outlined),
-            selectedIcon: const Icon(Icons.assignment, color: Color(0xFF0D6B4F)),
+            selectedIcon: const Icon(
+              Icons.assignment,
+              color: Color(0xFF0D6B4F),
+            ),
             label: loc.t('applications'),
           ),
           NavigationDestination(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
@@ -33,7 +34,8 @@ class EmployerDashboardScreen extends StatefulWidget {
   });
 
   @override
-  State<EmployerDashboardScreen> createState() => _EmployerDashboardScreenState();
+  State<EmployerDashboardScreen> createState() =>
+      _EmployerDashboardScreenState();
 }
 
 class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
@@ -82,7 +84,9 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFDC2626)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
             child: const Text('Logout'),
           ),
         ],
@@ -149,9 +153,14 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    final orgName = _employerData?['organization_name'] ?? 'Employer Organization';
-    final verificationStatus = _employerData?['verification_status'] ?? 'pending';
-    final totalApplicants = _jobs.fold<int>(0, (sum, j) => sum + (j.applicantsCount ?? 0));
+    final orgName =
+        _employerData?['organization_name'] ?? 'Employer Organization';
+    final verificationStatus =
+        _employerData?['verification_status'] ?? 'pending';
+    final totalApplicants = _jobs.fold<int>(
+      0,
+      (sum, j) => sum + (j.applicantsCount ?? 0),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -163,7 +172,9 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AdvertisementManagementScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AdvertisementManagementScreen(),
+                ),
               );
             },
           ),
@@ -216,7 +227,11 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.edit_note, color: Colors.white70, size: 20),
+                                    icon: const Icon(
+                                      Icons.edit_note,
+                                      color: Colors.white70,
+                                      size: 20,
+                                    ),
                                     tooltip: 'Edit Organization Profile',
                                     onPressed: () => widget.onTabChange(3),
                                     constraints: const BoxConstraints(),
@@ -242,15 +257,27 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _employerData?['email'] ?? 'Verified Recruitment Account',
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          _employerData?['email'] ??
+                              'Verified Recruitment Account',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            _buildStatCard('Active Jobs', '${_jobs.length}', onTap: () => widget.onTabChange(1)),
+                            _buildStatCard(
+                              'Active Jobs',
+                              '${_jobs.length}',
+                              onTap: () => widget.onTabChange(1),
+                            ),
                             const SizedBox(width: 12),
-                            _buildStatCard('Applicants', '$totalApplicants', onTap: () => widget.onTabChange(1)),
+                            _buildStatCard(
+                              'Applicants',
+                              '$totalApplicants',
+                              onTap: () => widget.onTabChange(1),
+                            ),
                           ],
                         ),
                       ],
@@ -285,18 +312,29 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const AdvertisementManagementScreen()),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const AdvertisementManagementScreen(),
+                          ),
                         );
                       },
-                      icon: const Icon(Icons.campaign, color: Color(0xFF0D6B4F)),
+                      icon: const Icon(
+                        Icons.campaign,
+                        color: Color(0xFF0D6B4F),
+                      ),
                       label: const Text(
                         'Promotional Campaigns & Sponsored Ads',
-                        style: TextStyle(color: Color(0xFF0D6B4F), fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          color: Color(0xFF0D6B4F),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF0D6B4F)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -315,7 +353,10 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                     children: [
                       const Text(
                         'Recent Vacancies',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       TextButton(
                         onPressed: () => widget.onTabChange(1),
@@ -334,17 +375,28 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                       ),
                       child: Column(
                         children: [
-                          Icon(Icons.work_outline, size: 44, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.work_outline,
+                            size: 44,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(height: 12),
                           const Text(
                             'No vacancies posted yet',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Color(0xFF1E293B),
+                            ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Post your first vacancy to start receiving verified candidate applications across Ethiopia.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 13,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
@@ -354,8 +406,13 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0D6B4F),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                           ),
                         ],
@@ -365,7 +422,9 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                     ..._jobs.take(5).map((job) {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         elevation: 1,
                         child: Padding(
                           padding: const EdgeInsets.all(14),
@@ -377,18 +436,25 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           job.title,
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           '${job.location} • ${job.employmentType}',
-                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -398,11 +464,16 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
                                     '${job.salaryText} • ${job.applicantsCount ?? 0} applied',
-                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0D6B4F)),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF0D6B4F),
+                                    ),
                                   ),
                                   Wrap(
                                     spacing: 8,
@@ -412,20 +483,30 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                              builder: (_) => JobApplicantsScreen(
-                                                jobId: job.id,
-                                                jobTitle: job.title,
-                                                jobRepo: widget.jobRepo,
-                                                appRepo: widget.appRepo,
-                                              ),
+                                              builder: (_) =>
+                                                  JobApplicantsScreen(
+                                                    jobId: job.id,
+                                                    jobTitle: job.title,
+                                                    jobRepo: widget.jobRepo,
+                                                    appRepo: widget.appRepo,
+                                                  ),
                                             ),
                                           ).then((_) => _load(isRefresh: true));
                                         },
-                                        icon: const Icon(Icons.people_outline, size: 14),
-                                        label: Text('Applicants (${job.applicantsCount ?? 0})', style: const TextStyle(fontSize: 12)),
+                                        icon: const Icon(
+                                          Icons.people_outline,
+                                          size: 14,
+                                        ),
+                                        label: Text(
+                                          'Applicants (${job.applicantsCount ?? 0})',
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
                                         style: OutlinedButton.styleFrom(
                                           visualDensity: VisualDensity.compact,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
                                         ),
                                       ),
                                       ElevatedButton.icon(
@@ -442,13 +523,24 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                             ),
                                           ).then((_) => _load(isRefresh: true));
                                         },
-                                        icon: const Icon(Icons.visibility_outlined, size: 14),
-                                        label: const Text('View', style: TextStyle(fontSize: 12)),
+                                        icon: const Icon(
+                                          Icons.visibility_outlined,
+                                          size: 14,
+                                        ),
+                                        label: const Text(
+                                          'View',
+                                          style: TextStyle(fontSize: 12),
+                                        ),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(0xFF0D6B4F),
+                                          backgroundColor: const Color(
+                                            0xFF0D6B4F,
+                                          ),
                                           foregroundColor: Colors.white,
                                           visualDensity: VisualDensity.compact,
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 4,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -484,13 +576,27 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text(
+                    label,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
                 ],
               ),
               if (onTap != null)
-                const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white54),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 12,
+                  color: Colors.white54,
+                ),
             ],
           ),
         ),

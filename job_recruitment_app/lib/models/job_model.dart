@@ -30,6 +30,12 @@ class JobModel {
   final double? matchScore;
   final Map<String, dynamic>? matchDetails;
   final int? applicantsCount;
+  final int fraudScore;
+  final String fraudRiskLevel;
+  final List<String> fraudIndicators;
+  final bool isFlagged;
+  final String moderationStatus;
+  final String? moderationNotes;
 
   JobModel({
     required this.id,
@@ -60,6 +66,12 @@ class JobModel {
     this.matchScore,
     this.matchDetails,
     this.applicantsCount,
+    this.fraudScore = 0,
+    this.fraudRiskLevel = 'low',
+    this.fraudIndicators = const [],
+    this.isFlagged = false,
+    this.moderationStatus = 'clean',
+    this.moderationNotes,
   });
 
   JobModel copyWith({
@@ -91,6 +103,12 @@ class JobModel {
     double? matchScore,
     Map<String, dynamic>? matchDetails,
     int? applicantsCount,
+    int? fraudScore,
+    String? fraudRiskLevel,
+    List<String>? fraudIndicators,
+    bool? isFlagged,
+    String? moderationStatus,
+    String? moderationNotes,
   }) {
     return JobModel(
       id: id ?? this.id,
@@ -121,6 +139,12 @@ class JobModel {
       matchScore: matchScore ?? this.matchScore,
       matchDetails: matchDetails ?? this.matchDetails,
       applicantsCount: applicantsCount ?? this.applicantsCount,
+      fraudScore: fraudScore ?? this.fraudScore,
+      fraudRiskLevel: fraudRiskLevel ?? this.fraudRiskLevel,
+      fraudIndicators: fraudIndicators ?? this.fraudIndicators,
+      isFlagged: isFlagged ?? this.isFlagged,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationNotes: moderationNotes ?? this.moderationNotes,
     );
   }
 
@@ -138,8 +162,8 @@ class JobModel {
       category: json['category'] is String
           ? json['category'] as String
           : (json['category'] is Map
-              ? (json['category']['name']?.toString())
-              : (json['category_name']?.toString())),
+                ? (json['category']['name']?.toString())
+                : (json['category_name']?.toString())),
       categoryId: json['category_id'],
       jobTitleId: json['job_title_id'],
       title: json['title'] ?? '',
@@ -147,8 +171,12 @@ class JobModel {
       responsibilities: json['responsibilities'],
       requirements: json['requirements'],
       location: json['location'] ?? '',
-      latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
-      longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
+      latitude: json['latitude'] != null
+          ? double.tryParse(json['latitude'].toString())
+          : null,
+      longitude: json['longitude'] != null
+          ? double.tryParse(json['longitude'].toString())
+          : null,
       employmentType: json['employment_type'] ?? 'Full-time',
       experienceRequired: json['experience_required'] != null
           ? double.tryParse(json['experience_required'].toString())
@@ -163,7 +191,7 @@ class JobModel {
       deadline: json['deadline'] ?? '',
       status: json['status'] ?? 'draft',
       publishedAt: json['published_at'],
-      employer: json['employer'] != null
+      employer: json['employer'] is Map<String, dynamic>
           ? EmployerModel.fromJson(json['employer'])
           : null,
       skills: skillList,
@@ -175,15 +203,37 @@ class JobModel {
           : null,
       matchDetails: json['match_details'],
       applicantsCount: json['applications_count'],
+      fraudScore: json['fraud_score'] is int
+          ? json['fraud_score']
+          : (int.tryParse(json['fraud_score']?.toString() ?? '0') ?? 0),
+      fraudRiskLevel: json['fraud_risk_level']?.toString() ?? 'low',
+      fraudIndicators: json['fraud_indicators'] is List
+          ? (json['fraud_indicators'] as List).map((e) => e.toString()).toList()
+          : const [],
+      isFlagged: json['is_flagged'] == true || json['is_flagged'] == 1,
+      moderationStatus: json['moderation_status']?.toString() ?? 'clean',
+      moderationNotes: json['moderation_notes']?.toString(),
     );
   }
+
+  bool get isHighFraudRisk =>
+      fraudScore >= 60 ||
+      fraudRiskLevel == 'high' ||
+      fraudRiskLevel == 'critical';
+
+  bool get isMediumFraudRisk => fraudScore >= 30 && fraudScore < 60;
+
+  bool get isQuarantinedOrFraud =>
+      moderationStatus == 'under_review' || moderationStatus == 'fraudulent';
 
   String get salaryText {
     if (salaryMin == null && salaryMax == null) return 'Negotiable';
     if (salaryMin != null && salaryMax != null) {
       return '${salaryMin!.toStringAsFixed(0)} - ${salaryMax!.toStringAsFixed(0)} $currency';
     }
-    if (salaryMin != null) return 'From ${salaryMin!.toStringAsFixed(0)} $currency';
+    if (salaryMin != null) {
+      return 'From ${salaryMin!.toStringAsFixed(0)} $currency';
+    }
     return 'Up to ${salaryMax!.toStringAsFixed(0)} $currency';
   }
 }

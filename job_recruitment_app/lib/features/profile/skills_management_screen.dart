@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/skill_model.dart';
 import '../../repositories/profile_repository.dart';
 import '../../l10n/app_localizations.dart';
@@ -26,23 +27,31 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final userSkills = await widget.profRepo.getUserSkills();
-    final allSkills = await widget.profRepo.getAllSkills();
-    final badges = await widget.profRepo.getUserBadges();
-    if (mounted) {
-      setState(() {
-        _userSkills = userSkills;
-        _allSkills = allSkills;
-        _badges = badges;
-        _isLoading = false;
-      });
+    try {
+      final userSkills = await widget.profRepo.getUserSkills();
+      final allSkills = await widget.profRepo.getAllSkills();
+      final badges = await widget.profRepo.getUserBadges();
+      if (mounted) {
+        setState(() {
+          _userSkills = userSkills;
+          _allSkills = allSkills;
+          _badges = badges;
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   void _showBadgesModal() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -53,7 +62,10 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
               child: Container(
                 width: 36,
                 height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -61,31 +73,51 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
               children: [
                 Icon(Icons.military_tech, color: Color(0xFFD97706)),
                 SizedBox(width: 8),
-                Text('Verified Skills & Badges', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Verified Skills & Badges',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 6),
-            const Text('Badges earned through Ethiopian skill assessment quizzes and evaluations:', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+            const Text(
+              'Badges earned through Ethiopian skill assessment quizzes and evaluations:',
+              style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
             const Divider(height: 20),
             if (_badges.isEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('No verified badges earned yet. Complete skill assessments to earn badges!')),
+                child: Center(
+                  child: Text(
+                    'No verified badges earned yet. Complete skill assessments to earn badges!',
+                  ),
+                ),
               )
             else
-              ..._badges.map((b) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const CircleAvatar(
-                      backgroundColor: Color(0xFFFEF3C7),
-                      child: Icon(Icons.verified, color: Color(0xFFD97706)),
+              ..._badges.map(
+                (b) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xFFFEF3C7),
+                    child: Icon(Icons.verified, color: Color(0xFFD97706)),
+                  ),
+                  title: Text(
+                    b['skill']?['name'] ?? 'Skill Badge',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Score: ${b['score']}% • Verified on ${b['verified_at'] ?? "Recent"}',
+                  ),
+                  trailing: const Chip(
+                    label: Text(
+                      'Verified',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF0D6B4F)),
                     ),
-                    title: Text(b['skill']?['name'] ?? 'Skill Badge', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Score: ${b['score']}% • Verified on ${b['verified_at'] ?? "Recent"}'),
-                    trailing: const Chip(
-                      label: Text('Verified', style: TextStyle(fontSize: 11, color: Color(0xFF0D6B4F))),
-                      backgroundColor: Color(0xFFE8F5E9),
-                    ),
-                  )),
+                    backgroundColor: Color(0xFFE8F5E9),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -99,7 +131,9 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
 
     // Filter available skills that user hasn't added yet
     final existingIds = _userSkills.map((s) => s.id).toSet();
-    final available = _allSkills.where((s) => !existingIds.contains(s.id)).toList();
+    final available = _allSkills
+        .where((s) => !existingIds.contains(s.id))
+        .toList();
 
     if (available.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,31 +163,48 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: selectedProficiency,
-                decoration: const InputDecoration(labelText: 'Proficiency Level'),
+                decoration: const InputDecoration(
+                  labelText: 'Proficiency Level',
+                ),
                 items: const [
                   DropdownMenuItem(value: 'beginner', child: Text('Beginner')),
-                  DropdownMenuItem(value: 'intermediate', child: Text('Intermediate')),
+                  DropdownMenuItem(
+                    value: 'intermediate',
+                    child: Text('Intermediate'),
+                  ),
                   DropdownMenuItem(value: 'advanced', child: Text('Advanced')),
                   DropdownMenuItem(value: 'expert', child: Text('Expert')),
                 ],
-                onChanged: (val) => setDialogState(() => selectedProficiency = val!),
+                onChanged: (val) =>
+                    setDialogState(() => selectedProficiency = val!),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 initialValue: '1.0',
-                decoration: const InputDecoration(labelText: 'Years of Experience'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Years of Experience',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 onChanged: (val) => yearsExp = double.tryParse(val) ?? 1.0,
               ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 if (selectedSkillId != null) {
                   Navigator.pop(ctx);
-                  await widget.profRepo.addSkill(selectedSkillId!, selectedProficiency, yearsExp);
+                  await widget.profRepo.addSkill(
+                    selectedSkillId!,
+                    selectedProficiency,
+                    yearsExp,
+                  );
                   _load();
                 }
               },
@@ -163,6 +214,101 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
         ),
       ),
     );
+  }
+
+  void _showEditDialog(SkillModel skill) {
+    String selectedProficiency = skill.proficiencyLevel ?? 'intermediate';
+    double yearsExp = skill.yearsExperience;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('Edit Skill: ${skill.name}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedProficiency,
+                decoration: const InputDecoration(
+                  labelText: 'Proficiency Level',
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'beginner', child: Text('Beginner')),
+                  DropdownMenuItem(
+                    value: 'intermediate',
+                    child: Text('Intermediate'),
+                  ),
+                  DropdownMenuItem(value: 'advanced', child: Text('Advanced')),
+                  DropdownMenuItem(value: 'expert', child: Text('Expert')),
+                ],
+                onChanged: (val) =>
+                    setDialogState(() => selectedProficiency = val!),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: yearsExp.toString(),
+                decoration: const InputDecoration(
+                  labelText: 'Years of Experience',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (val) => yearsExp = double.tryParse(val) ?? yearsExp,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                await widget.profRepo.addSkill(
+                  skill.id,
+                  selectedProficiency,
+                  yearsExp,
+                );
+                _load();
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(int skillId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Skill?'),
+        content: const Text(
+          'Are you sure you want to remove this skill from your profile?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await widget.profRepo.removeSkill(skillId);
+      _load();
+    }
   }
 
   @override
@@ -189,53 +335,81 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
         onPressed: _showAddDialog,
         backgroundColor: const Color(0xFF0D6B4F),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: Text(loc.t('add_skill'), style: const TextStyle(color: Colors.white)),
+        label: Text(
+          loc.t('add_skill'),
+          style: const TextStyle(color: Colors.white),
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _userSkills.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.grey),
-                      const SizedBox(height: 12),
-                      const Text('No skills added yet.'),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _showAddDialog,
-                        child: Text(loc.t('add_skill')),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 48,
+                    color: Colors.grey,
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _userSkills.length,
-                  itemBuilder: (context, index) {
-                    final skill = _userSkills[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          backgroundColor: Color(0xFFE2E8F0),
-                          child: Icon(Icons.code, color: Color(0xFF0D6B4F), size: 20),
-                        ),
-                        title: Text(skill.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(
-                          'Level: ${(skill.proficiencyLevel ?? "intermediate").toUpperCase()} • ${skill.yearsExperience} yrs',
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
-                          onPressed: () async {
-                            await widget.profRepo.removeSkill(skill.id);
-                            _load();
-                          },
-                        ),
+                  const SizedBox(height: 12),
+                  const Text('No skills added yet.'),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: _showAddDialog,
+                    child: Text(loc.t('add_skill')),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _userSkills.length,
+              itemBuilder: (context, index) {
+                final skill = _userSkills[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFE2E8F0),
+                      child: Icon(
+                        Icons.code,
+                        color: Color(0xFF0D6B4F),
+                        size: 20,
                       ),
-                    );
-                  },
-                ),
+                    ),
+                    title: Text(
+                      skill.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      'Level: ${(skill.proficiencyLevel ?? "intermediate").toUpperCase()} • ${skill.yearsExperience} yrs',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.edit_outlined,
+                            color: Color(0xFF0D6B4F),
+                          ),
+                          tooltip: 'Edit Skill',
+                          onPressed: () => _showEditDialog(skill),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Color(0xFFDC2626),
+                          ),
+                          tooltip: 'Remove Skill',
+                          onPressed: () => _confirmDelete(skill.id),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

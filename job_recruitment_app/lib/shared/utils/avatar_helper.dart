@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 ImageProvider? getAvatarImageProvider(String? photoUrl) {

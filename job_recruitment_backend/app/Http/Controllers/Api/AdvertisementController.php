@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Advertisement;
 use App\Models\AdvertisementEvent;
+use App\Models\AdsConsent;
 use App\Services\ImageUploadService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,10 +13,41 @@ use Illuminate\Support\Facades\DB;
 class AdvertisementController extends BaseApiController
 {
     /**
+     * Resolve ads consent for the current request.
+     */
+    protected function resolveConsent(Request $request): ?AdsConsent
+    {
+        $user = $request->user() ?: auth('sanctum')->user();
+        if ($user) {
+            $userConsent = AdsConsent::where('user_id', $user->id)->first();
+            if ($userConsent) {
+                return $userConsent;
+            }
+        }
+
+        $consentUuid = $request->header('X-Consent-ID')
+            ?: $request->input('consent_uuid')
+            ?: $request->query('consent_id');
+
+        if ($consentUuid) {
+            return AdsConsent::where('consent_uuid', $consentUuid)->first();
+        }
+
+        return null;
+    }
+
+    /**
      * Get active advertisements for clients, with optional placement & personalization.
      */
     public function index(Request $request): JsonResponse
     {
+        $consent = $this->resolveConsent($request);
+
+        // Privacy enforcement: If user has explicitly withdrawn consent or rejected non-personalized ads, serve no ads
+        if ($consent && ($consent->isWithdrawn() || !$consent->allowsNonPersonalizedAds())) {
+            return $this->successResponse([], 'Advertisements disabled per privacy consent preferences.');
+        }
+
         $query = Advertisement::active()->with(['employer', 'job']);
 
         if ($request->filled('placement')) {
@@ -36,8 +68,16 @@ class AdvertisementController extends BaseApiController
 
         $ads = $query->orderByDesc('priority')->latest()->get();
 
+        // Determine if personalization is permitted by privacy consent
+        $allowPersonalization = true;
+        if ($consent) {
+            $allowPersonalization = $consent->allowsPersonalizedAds();
+        } else {
+            // Default to client request param if no explicit consent object recorded
+            $allowPersonalization = $request->boolean('personalized', true);
+        }
+
         // Smart personalization based on user skills (respects user privacy/consent)
-        $allowPersonalization = $request->boolean('personalized', true);
         if ($allowPersonalization && $user && $user->jobSeekerProfile) {
             $candidateSkillIds = $user->jobSeekerProfile->skills()->pluck('skills.id')->toArray();
             if (!empty($candidateSkillIds)) {
@@ -65,22 +105,37 @@ class AdvertisementController extends BaseApiController
     public function recordImpression(Request $request, int $id): JsonResponse
     {
         $ad = Advertisement::findOrFail($id);
+        $consent = $this->resolveConsent($request);
+
+        // Privacy enforcement: Check whether analytics consent is granted
+        if ($consent && ($consent->isWithdrawn() || !$consent->allowsAnalytics())) {
+            return $this->successResponse([
+                'id' => $ad->id,
+                'impressions_count' => $ad->impressions_count,
+                'tracking_allowed' => false,
+            ], 'Impression tracking skipped due to privacy consent preferences.');
+        }
+
         $ad->increment('impressions_count');
 
         $user = $request->user() ?: auth('sanctum')->user();
+
+        // If advertising cookies/cross-session tracking disallowed, redact IP and user agent
+        $trackCookies = $consent ? $consent->allowsCookies() : true;
 
         AdvertisementEvent::create([
             'advertisement_id' => $ad->id,
             'user_id' => $user?->id,
             'event_type' => 'impression',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+            'ip_address' => $trackCookies ? $request->ip() : '0.0.0.0',
+            'user_agent' => $trackCookies ? $request->userAgent() : 'Anonymized/Consent-Restricted',
             'created_at' => now(),
         ]);
 
         return $this->successResponse([
             'id' => $ad->id,
             'impressions_count' => $ad->impressions_count,
+            'tracking_allowed' => true,
         ], 'Impression recorded.');
     }
 
@@ -90,16 +145,31 @@ class AdvertisementController extends BaseApiController
     public function recordClick(Request $request, int $id): JsonResponse
     {
         $ad = Advertisement::findOrFail($id);
+        $consent = $this->resolveConsent($request);
+
+        // Privacy enforcement: Check whether analytics consent is granted
+        if ($consent && ($consent->isWithdrawn() || !$consent->allowsAnalytics())) {
+            return $this->successResponse([
+                'id' => $ad->id,
+                'clicks_count' => $ad->clicks_count,
+                'cta_target' => $ad->cta_target,
+                'cta_type' => $ad->cta_type,
+                'ctr' => $ad->ctr,
+                'tracking_allowed' => false,
+            ], 'Click recorded without analytics telemetry per privacy consent.');
+        }
+
         $ad->increment('clicks_count');
 
         $user = $request->user() ?: auth('sanctum')->user();
+        $trackCookies = $consent ? $consent->allowsCookies() : true;
 
         AdvertisementEvent::create([
             'advertisement_id' => $ad->id,
             'user_id' => $user?->id,
             'event_type' => 'click',
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+            'ip_address' => $trackCookies ? $request->ip() : '0.0.0.0',
+            'user_agent' => $trackCookies ? $request->userAgent() : 'Anonymized/Consent-Restricted',
             'created_at' => now(),
         ]);
 
@@ -109,6 +179,7 @@ class AdvertisementController extends BaseApiController
             'cta_target' => $ad->cta_target,
             'cta_type' => $ad->cta_type,
             'ctr' => $ad->ctr,
+            'tracking_allowed' => true,
         ], 'Click recorded.');
     }
 

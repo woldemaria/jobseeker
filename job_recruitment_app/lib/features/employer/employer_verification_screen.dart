@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/api_service.dart';
 import '../../core/constants/api_constants.dart';
 import '../../l10n/app_localizations.dart';
@@ -10,10 +11,12 @@ class EmployerVerificationScreen extends StatefulWidget {
   const EmployerVerificationScreen({super.key, required this.apiService});
 
   @override
-  State<EmployerVerificationScreen> createState() => _EmployerVerificationScreenState();
+  State<EmployerVerificationScreen> createState() =>
+      _EmployerVerificationScreenState();
 }
 
-class _EmployerVerificationScreenState extends State<EmployerVerificationScreen> {
+class _EmployerVerificationScreenState
+    extends State<EmployerVerificationScreen> {
   String _status = 'pending';
   List<dynamic> _history = [];
   bool _isLoading = true;
@@ -34,15 +37,19 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final resp = await widget.apiService.get(ApiConstants.employerVerification);
-    if (mounted) {
-      if (resp.success && resp.data != null) {
+    try {
+      final resp = await widget.apiService.get(
+        ApiConstants.employerVerification,
+      );
+      if (mounted && resp.success && resp.data != null) {
         setState(() {
           _status = resp.data['verification_status'] ?? 'pending';
           _history = resp.data['history'] ?? [];
-          _isLoading = false;
         });
-      } else {
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
         setState(() => _isLoading = false);
       }
     }
@@ -50,9 +57,10 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
 
   Future<void> _submitRequest() async {
     setState(() => _isSubmitting = true);
-    final resp = await widget.apiService.post(ApiConstants.employerVerification, {
-      'review_notes': _notesController.text.trim(),
-    });
+    final resp = await widget.apiService.post(
+      ApiConstants.employerVerification,
+      {'review_notes': _notesController.text.trim()},
+    );
 
     if (mounted) {
       setState(() => _isSubmitting = false);
@@ -60,12 +68,13 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
         _notesController.clear();
         _load();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Verification request submitted for admin review.')),
+          const SnackBar(
+            content: Text('Verification request submitted for admin review.'),
+          ),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resp.message)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(resp.message)));
       }
     }
   }
@@ -100,7 +109,10 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
                         const SizedBox(height: 10),
                         const Text(
                           'Verified employers earn trusted badges and heightened applicant confidence.',
-                          style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                          ),
                         ),
                       ],
                     ),
@@ -110,7 +122,10 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
 
                 Text(
                   loc.t('request_verification'),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Card(
@@ -122,7 +137,8 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
                           controller: _notesController,
                           maxLines: 3,
                           decoration: const InputDecoration(
-                            labelText: 'Registration / Tax Identification Notes',
+                            labelText:
+                                'Registration / Tax Identification Notes',
                             hintText: 'Enter business license or TIN details for administration review...',
                           ),
                         ),
@@ -133,7 +149,10 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : Text(loc.t('request_verification')),
                         ),
@@ -149,7 +168,10 @@ class _EmployerVerificationScreenState extends State<EmployerVerificationScreen>
                 ),
                 const SizedBox(height: 8),
                 if (_history.isEmpty)
-                  const Text('No prior verification submissions.', style: TextStyle(color: Color(0xFF64748B)))
+                  const Text(
+                    'No prior verification submissions.',
+                    style: TextStyle(color: Color(0xFF64748B)),
+                  )
                 else
                   ..._history.map((h) {
                     return Card(

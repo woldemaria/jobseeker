@@ -22,13 +22,20 @@ class JobRepository {
     final Map<String, String> params = {};
     if (keyword != null && keyword.isNotEmpty) params['keyword'] = keyword;
     if (location != null && location.isNotEmpty) params['location'] = location;
-    if (employmentType != null && employmentType.isNotEmpty) params['employment_type'] = employmentType;
+    if (employmentType != null && employmentType.isNotEmpty) {
+      params['employment_type'] = employmentType;
+    }
     if (minSalary != null) params['min_salary'] = minSalary.toString();
     if (skillId != null) params['skill_id'] = skillId.toString();
-    if (category != null && category.isNotEmpty && category != 'All') params['category'] = category;
+    if (category != null && category.isNotEmpty && category != 'All') {
+      params['category'] = category;
+    }
     if (categoryId != null) params['category_id'] = categoryId.toString();
 
-    final response = await _apiService.get(ApiConstants.jobs, queryParams: params);
+    final response = await _apiService.get(
+      ApiConstants.jobs,
+      queryParams: params,
+    );
     if (response.success && response.data is List) {
       return (response.data as List).map((j) => JobModel.fromJson(j)).toList();
     }
@@ -36,43 +43,76 @@ class JobRepository {
   }
 
   /// Get list of Ethiopian Job Categories with vacancy counts
-  Future<List<JobCategoryModel>> getCategories({bool includeTitles = false}) async {
+  Future<List<JobCategoryModel>> getCategories({
+    bool includeTitles = false,
+  }) async {
     final response = await _apiService.get(
       ApiConstants.categories,
       queryParams: includeTitles ? {'include_titles': '1'} : null,
     );
     if (response.success && response.data is List) {
-      return (response.data as List).map((c) => JobCategoryModel.fromJson(c)).toList();
+      return (response.data as List)
+          .map((c) => JobCategoryModel.fromJson(c))
+          .toList();
     }
     // Offline fallback to bundled catalogue
-    return EthiopianJobCatalogue.categories.map((c) => JobCategoryModel(
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      iconName: c.iconName,
-      titlesCount: c.titles.length,
-      titles: c.titles.map((t) => JobTitleModel(id: 0, categoryId: c.id, title: t, slug: '')).toList(),
-    )).toList();
+    return EthiopianJobCatalogue.categories
+        .map(
+          (c) => JobCategoryModel(
+            id: c.id,
+            name: c.name,
+            slug: c.slug,
+            iconName: c.iconName,
+            titlesCount: c.titles.length,
+            titles: c.titles
+                .map(
+                  (t) => JobTitleModel(
+                    id: 0,
+                    categoryId: c.id,
+                    title: t,
+                    slug: '',
+                  ),
+                )
+                .toList(),
+          ),
+        )
+        .toList();
   }
 
   /// Search standard Ethiopian job titles
-  Future<List<JobTitleModel>> getJobTitles({int? categoryId, String? query, int limit = 50}) async {
+  Future<List<JobTitleModel>> getJobTitles({
+    int? categoryId,
+    String? query,
+    int limit = 50,
+  }) async {
     final Map<String, String> params = {'limit': limit.toString()};
     if (categoryId != null) params['category_id'] = categoryId.toString();
     if (query != null && query.isNotEmpty) params['query'] = query;
 
-    final response = await _apiService.get(ApiConstants.jobTitles, queryParams: params);
+    final response = await _apiService.get(
+      ApiConstants.jobTitles,
+      queryParams: params,
+    );
     if (response.success && response.data is List) {
-      return (response.data as List).map((t) => JobTitleModel.fromJson(t)).toList();
+      return (response.data as List)
+          .map((t) => JobTitleModel.fromJson(t))
+          .toList();
     }
     // Offline fallback
-    final staticMatches = EthiopianJobCatalogue.searchTitles(query ?? '', limit: limit);
-    return staticMatches.map((t) => JobTitleModel(
-      id: 0,
-      categoryId: categoryId ?? 0,
-      title: t,
-      slug: '',
-    )).toList();
+    final staticMatches = EthiopianJobCatalogue.searchTitles(
+      query ?? '',
+      limit: limit,
+    );
+    return staticMatches
+        .map(
+          (t) => JobTitleModel(
+            id: 0,
+            categoryId: categoryId ?? 0,
+            title: t,
+            slug: '',
+          ),
+        )
+        .toList();
   }
 
   Future<JobModel?> getJobDetails(int id) async {
@@ -84,7 +124,10 @@ class JobRepository {
   }
 
   Future<List<JobModel>> getRecommendations({int limit = 20}) async {
-    final response = await _apiService.get(ApiConstants.recommendations, queryParams: {'limit': limit.toString()});
+    final response = await _apiService.get(
+      ApiConstants.recommendations,
+      queryParams: {'limit': limit.toString()},
+    );
     if (response.success && response.data is List) {
       return (response.data as List).map((j) => JobModel.fromJson(j)).toList();
     }
@@ -100,12 +143,17 @@ class JobRepository {
   }
 
   Future<bool> saveJob(int jobId) async {
-    final response = await _apiService.post('${ApiConstants.jobs}/$jobId/save', {});
+    final response = await _apiService.post(
+      '${ApiConstants.jobs}/$jobId/save',
+      {},
+    );
     return response.success;
   }
 
   Future<bool> unsaveJob(int jobId) async {
-    final response = await _apiService.delete('${ApiConstants.jobs}/$jobId/save');
+    final response = await _apiService.delete(
+      '${ApiConstants.jobs}/$jobId/save',
+    );
     return response.success;
   }
 
@@ -143,14 +191,20 @@ class JobRepository {
   }
 
   Future<List<dynamic>> getJobApplicants(int jobId) async {
-    final response = await _apiService.get('${ApiConstants.jobs}/$jobId/applicants');
+    final response = await _apiService.get(
+      '${ApiConstants.jobs}/$jobId/applicants',
+    );
     if (response.success && response.data is List) {
       return response.data as List;
     }
     return [];
   }
 
-  Future<ApiResponse> reportJob(int jobId, String reason, String? description) async {
+  Future<ApiResponse> reportJob(
+    int jobId,
+    String reason,
+    String? description,
+  ) async {
     return await _apiService.post(ApiConstants.reports, {
       'job_id': jobId,
       'reason': reason,
@@ -176,9 +230,7 @@ class JobRepository {
     String? subCity,
     double radiusKm = 15.0,
   }) async {
-    final params = <String, String>{
-      'radius_km': radiusKm.toString(),
-    };
+    final params = <String, String>{'radius_km': radiusKm.toString()};
     if (lat != null && lon != null) {
       params['lat'] = lat.toString();
       params['lon'] = lon.toString();
@@ -187,11 +239,50 @@ class JobRepository {
       params['sub_city'] = subCity;
     }
 
-    final query = params.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&');
+    final query = params.entries
+        .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+        .join('&');
     final response = await _apiService.get('/jobs/radar?$query');
     if (response.success && response.data is Map) {
       return Map<String, dynamic>.from(response.data);
     }
     return null;
+  }
+
+  /// Retrieve full fraud assessment and safety checklist for a vacancy
+  Future<Map<String, dynamic>?> getFraudAssessment(int jobId) async {
+    final response = await _apiService.get(
+      ApiConstants.jobFraudAssessment(jobId),
+    );
+    if (response.success && response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  /// Run pre-submission scam scan on job listing payload
+  Future<Map<String, dynamic>?> checkJobFraud(Map<String, dynamic> data) async {
+    final response = await _apiService.post(ApiConstants.checkJobFraud, data);
+    if (response.success && response.data is Map<String, dynamic>) {
+      return response.data as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  /// Submit an abuse/fraud report for a vacancy or user
+  Future<bool> submitReport({
+    int? jobId,
+    int? reportedUserId,
+    required String reason,
+    String? description,
+  }) async {
+    final response = await _apiService.post(ApiConstants.reports, {
+      'job_id': ?jobId,
+      'reported_user_id': ?reportedUserId,
+      'reason': reason,
+      if (description != null && description.isNotEmpty)
+        'description': description,
+    });
+    return response.success;
   }
 }
