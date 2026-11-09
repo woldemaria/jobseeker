@@ -52,11 +52,15 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadJob();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadJob();
+    });
   }
 
   Future<void> _loadJob() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
     try {
       final job = await widget.jobRepo.getJobDetails(widget.jobId);
       Map<String, dynamic>? match;
@@ -801,7 +805,16 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ),
                 );
                 if (mounted) {
-                  _loadJob();
+                  await _loadJob();
+                  if (mounted && auth.isAuthenticated && _job != null && !_job!.hasApplied) {
+                    ApplyJobSheet.show(
+                      context,
+                      _job!,
+                      widget.appRepo,
+                      widget.profRepo,
+                      _loadJob,
+                    );
+                  }
                 }
               },
               child: const Text('Sign In / Register'),

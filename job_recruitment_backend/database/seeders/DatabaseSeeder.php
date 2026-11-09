@@ -408,7 +408,8 @@ class DatabaseSeeder extends Seeder
             'is_read' => false,
         ]);
 
-        // Production Advertisements
+        // Advertising Packages & Production Advertisements
+        $this->call(AdvertisingPackageSeeder::class);
         $this->call(AdvertisementSeeder::class);
 
         // Community & Friends Chat Groups

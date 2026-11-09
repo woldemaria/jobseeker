@@ -15,6 +15,13 @@ class AuthService extends ChangeNotifier {
 
   AuthService(this._apiService, this._storageService) {
     _localeCode = _storageService.getLanguage();
+    ApiService.onSessionExpired = () {
+      if (_currentUser != null) {
+        _currentUser = null;
+        _storageService.removeToken();
+        notifyListeners();
+      }
+    };
   }
 
   UserModel? get currentUser => _currentUser;

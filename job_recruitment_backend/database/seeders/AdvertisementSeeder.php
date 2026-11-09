@@ -40,6 +40,10 @@ class AdvertisementSeeder extends Seeder
                 'cta_target' => '/jobs',
                 'background_color' => '#064E3B',
                 'status' => 'active',
+                'approval_status' => 'approved',
+                'payment_status' => 'paid',
+                'approved_by' => $admin->id,
+                'approved_at' => now()->subDays(5),
                 'priority' => 10,
                 'start_date' => now()->subDays(5),
                 'end_date' => now()->addDays(60),
@@ -136,6 +140,11 @@ class AdvertisementSeeder extends Seeder
         ];
 
         foreach ($campaigns as $data) {
+            $data['approval_status'] = $data['approval_status'] ?? 'approved';
+            $data['payment_status'] = $data['payment_status'] ?? 'paid';
+            $data['approved_by'] = $data['approved_by'] ?? $admin->id;
+            $data['approved_at'] = $data['approved_at'] ?? now()->subDays(2);
+
             $ad = Advertisement::create($data);
 
             // Seed realistic events

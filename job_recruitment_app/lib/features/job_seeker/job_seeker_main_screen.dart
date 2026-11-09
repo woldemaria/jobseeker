@@ -31,16 +31,12 @@ class JobSeekerMainScreen extends StatefulWidget {
 
 class _JobSeekerMainScreenState extends State<JobSeekerMainScreen> {
   int _currentIndex = 0;
-
-  void _onTabChange(int index) {
-    setState(() => _currentIndex = index);
-  }
+  late final List<Widget> _screens;
 
   @override
-  Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
-
-    final screens = [
+  void initState() {
+    super.initState();
+    _screens = [
       JobSeekerDashboardScreen(
         jobRepo: widget.jobRepo,
         appRepo: widget.appRepo,
@@ -61,9 +57,18 @@ class _JobSeekerMainScreenState extends State<JobSeekerMainScreen> {
       MyApplicationsScreen(appRepo: widget.appRepo),
       ProfileScreen(profRepo: widget.profRepo, authService: widget.authService),
     ];
+  }
+
+  void _onTabChange(int index) {
+    setState(() => _currentIndex = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
 
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: screens),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),

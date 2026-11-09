@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/document_model.dart';
 import '../../repositories/profile_repository.dart';
+import 'profile_cv_preview_dialog.dart';
 
 class CvManagementScreen extends StatefulWidget {
   final ProfileRepository profRepo;
@@ -338,6 +339,11 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
       appBar: AppBar(
         title: Text(loc.t('manage_cv')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Generate Standard Ethiopian CV',
+            onPressed: () => ProfileCvPreviewDialog.show(context, profRepo: widget.profRepo),
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
       ),
@@ -389,6 +395,16 @@ class _CvManagementScreenState extends State<CvManagementScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppTheme.primaryColor,
                       foregroundColor: Colors.white,
+                      minimumSize: const Size(220, 44),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: () => ProfileCvPreviewDialog.show(context, profRepo: widget.profRepo),
+                    icon: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF0D6B4F)),
+                    label: const Text('Generate CV from Profile', style: TextStyle(color: Color(0xFF0D6B4F))),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF0D6B4F)),
                       minimumSize: const Size(220, 44),
                     ),
                   ),

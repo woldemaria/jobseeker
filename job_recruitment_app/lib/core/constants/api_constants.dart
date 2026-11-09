@@ -89,6 +89,17 @@ class ApiConstants {
   // Notifications
   static const String notifications = '/notifications';
   static const String markAllNotificationsRead = '/notifications/read-all';
+  static const String deviceToken = '/notifications/device-token';
+
+  // Ethiopian Features, Quizzes & Localization
+  static const String quizzes = '/quizzes';
+  static String quizDetail(int id) => '/quizzes/$id';
+  static String quizSubmit(int id) => '/quizzes/$id/submit';
+  static const String userBadges = '/user/badges';
+  static const String salaryBenchmarks = '/salary-benchmarks';
+  static const String jobsRadar = '/jobs/radar';
+  static String jobNoticePoster(int id) => '/jobs/$id/poster';
+  static String jobExportCandidates(int id) => '/jobs/$id/export-candidates';
 
   // Reports & Fraud Detection
   static const String reports = '/reports';
@@ -99,6 +110,47 @@ class ApiConstants {
   static const String advertisements = '/advertisements';
   static String adImpression(int id) => '/advertisements/$id/impression';
   static String adClick(int id) => '/advertisements/$id/click';
+
+  // Advertising Packages
+  static const String adPackages = '/ad-packages';
+  static String adPackageDetail(int id) => '/ad-packages/$id';
+  static const String adminAdPackages = '/admin/ad-packages';
+  static String adminAdPackageDetail(int id) => '/admin/ad-packages/$id';
+  static String adminAdPackageToggle(int id) =>
+      '/admin/ad-packages/$id/toggle-status';
+
+  // Ethiopian Geographic Targeting & Campaigns (Phase 2)
+  static const String campaignLocations = '/campaigns/locations';
+  static const String advertiserCampaigns = '/advertiser/campaigns';
+  static String advertiserCampaignDetail(int id) => '/advertiser/campaigns/$id';
+  static String advertiserCampaignSubmit(int id) =>
+      '/advertiser/campaigns/$id/submit';
+  static String advertiserCampaignPause(int id) =>
+      '/advertiser/campaigns/$id/pause';
+  static String advertiserCampaignResume(int id) =>
+      '/advertiser/campaigns/$id/resume';
+
+  // Admin Campaign Moderation (Phase 2)
+  static const String adminCampaigns = '/admin/campaigns';
+  static String adminCampaignDetail(int id) => '/admin/campaigns/$id';
+  static String adminCampaignApprove(int id) => '/admin/campaigns/$id/approve';
+  static String adminCampaignReject(int id) => '/admin/campaigns/$id/reject';
+  static String adminCampaignSuspend(int id) => '/admin/campaigns/$id/suspend';
+
+  // Payment Gateways & Transactions (Phase 3)
+  static const String paymentMethods = '/payments/methods';
+  static const String initiatePayment = '/advertiser/payments/initiate';
+  static String verifyPayment(String reference) =>
+      '/advertiser/payments/verify/$reference';
+  static const String employerTransactions =
+      '/advertiser/payments/transactions';
+  static String employerTransactionDetail(String reference) =>
+      '/advertiser/payments/transactions/$reference';
+  static const String adminTransactions = '/admin/payments/transactions';
+  static String adminTransactionDetail(String reference) =>
+      '/admin/payments/transactions/$reference';
+  static String adminRefundTransaction(String reference) =>
+      '/admin/payments/transactions/$reference/refund';
 
   // Ads & Privacy Consent
   static const String adsConsent = '/ads-consent';

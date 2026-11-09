@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(150) NOT NULL UNIQUE,
     phone VARCHAR(30) NULL,
     profile_photo TEXT NULL,
+    device_token VARCHAR(255) NULL,
+    device_platform VARCHAR(30) NULL,
     password VARCHAR(255) NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'active',
     email_verified_at TIMESTAMP NULL,
@@ -945,3 +947,103 @@ INSERT INTO job_titles (id, category_id, title, slug) VALUES
 (474, 30, 'Cybersecurity Technician', 'cybersecurity-technician'),
 (475, 30, 'Renewable Energy Installer', 'renewable-energy-installer')
 ON DUPLICATE KEY UPDATE title=VALUES(title), slug=VALUES(slug);
+
+
+-- ============================================================================
+-- ADVERTISING PACKAGES & REVENUE MONETIZATION
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS advertising_packages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT NULL,
+    duration_days INT NOT NULL DEFAULT 7,
+    price_etb DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    allowed_placements JSON NULL,
+    allowed_categories JSON NULL,
+    benefits JSON NULL,
+    badge_label VARCHAR(50) NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    priority_level INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    INDEX idx_adv_packages_slug (slug),
+    INDEX idx_adv_packages_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- ETHIOPIAN PAYMENT TRANSACTIONS & FINANCIAL AUDIT
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS payment_transactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    transaction_reference VARCHAR(100) NOT NULL UNIQUE,
+    merchant_reference VARCHAR(100) NOT NULL,
+    idempotency_key VARCHAR(120) NULL,
+    provider_reference VARCHAR(150) NULL,
+    checkout_url TEXT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    employer_id BIGINT UNSIGNED NOT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    advertisement_id BIGINT UNSIGNED NOT NULL,
+    package_id BIGINT UNSIGNED NOT NULL,
+    expected_amount_etb DECIMAL(12, 2) NOT NULL,
+    confirmed_amount_etb DECIMAL(12, 2) NULL,
+    currency VARCHAR(3) NOT NULL DEFAULT 'ETB',
+    payment_status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    verified_at TIMESTAMP NULL,
+    verified_by VARCHAR(100) NULL,
+    failure_reason TEXT NULL,
+    receipt_number VARCHAR(64) NULL UNIQUE,
+    payment_metadata JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (employer_id) REFERENCES employers(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (advertisement_id) REFERENCES advertisements(id) ON DELETE CASCADE,
+    FOREIGN KEY (package_id) REFERENCES advertising_packages(id) ON DELETE CASCADE,
+    INDEX idx_pt_merchant_ref (merchant_reference),
+    INDEX idx_pt_idempotency (idempotency_key),
+    INDEX idx_pt_provider_ref (provider_reference),
+    INDEX idx_pt_status (payment_status),
+    INDEX idx_pt_method (payment_method)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_webhook_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    provider VARCHAR(50) NOT NULL,
+    event_id VARCHAR(150) NOT NULL UNIQUE,
+    transaction_reference VARCHAR(100) NULL,
+    payload JSON NOT NULL,
+    signature VARCHAR(255) NULL,
+    processed TINYINT(1) NOT NULL DEFAULT 0,
+    processing_notes TEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_pwe_provider (provider),
+    INDEX idx_pwe_tx_ref (transaction_reference)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS payment_refunds (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    transaction_id BIGINT UNSIGNED NOT NULL,
+    refund_reference VARCHAR(100) NOT NULL UNIQUE,
+    amount DECIMAL(12, 2) NOT NULL,
+    reason TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    initiated_by BIGINT UNSIGNED NOT NULL,
+    provider_refund_id VARCHAR(150) NULL,
+    metadata JSON NULL,
+    created_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NULL,
+    FOREIGN KEY (transaction_id) REFERENCES payment_transactions(id) ON DELETE CASCADE,
+    FOREIGN KEY (initiated_by) REFERENCES users(id),
+    INDEX idx_pr_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Standard Seed Data for Advertising Packages
+INSERT INTO advertising_packages (id, name, slug, description, duration_days, price_etb, allowed_placements, allowed_categories, benefits, badge_label, is_active, priority_level) VALUES
+(1, 'Starter Boost', 'starter-boost', 'Affordable 7-day visibility boost across job listings and sidebar.', 7, 350.00, '["job_list", "sidebar"]', '["sponsored_vacancies", "featured_jobs"]', '["7 days sponsored listing", "1.5x matching visibility", "Standard analytics"]', 'Starter', 1, 1),
+(2, 'Featured Spotlight', 'featured-spotlight', 'High-impact 14-day placement on dashboard hero and prominent search banner.', 14, 950.00, '["hero", "dashboard", "job_list"]', '["featured_jobs", "company_promotions", "sponsored_vacancies"]', '["14 days dashboard hero", "3x matching algorithm boost", "Push notification alert", "Full conversion telemetry"]', 'Popular', 1, 2),
+(3, 'Enterprise Corporate Campaign', 'enterprise-corporate', 'Complete 30-day nationwide multi-placement takeover for high-volume recruitment.', 30, 2400.00, '["hero", "dashboard", "job_list", "sidebar", "search_sponsored"]', '["featured_jobs", "company_promotions", "recruitment_campaigns", "sponsored_vacancies", "announcements"]', '["30 days nationwide exposure", "Dedicated employer banner carousel", "Multi-region targeting (Addis Ababa, Oromia, Amhara)", "Direct WhatsApp & Telebirr integrations", "Premium hiring analytics & CSV exports"]', 'Enterprise', 1, 3)
+ON DUPLICATE KEY UPDATE name=VALUES(name), price_etb=VALUES(price_etb), duration_days=VALUES(duration_days);

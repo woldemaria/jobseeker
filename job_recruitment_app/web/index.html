@@ -2,45 +2,194 @@
 <html>
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    JobSeeker Ethiopia - Web Platform
+    Production Progressive Web Application
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Ethiopia's Premier AI-Powered Job Matching, Career Progression, and Multi-Role Recruitment Platform.">
+  <meta name="theme-color" content="#0D6B4F">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="job_recruitment_app">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="JobSeeker Ethiopia">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>job_recruitment_app</title>
+  <title>JobSeeker Ethiopia - AI-Powered Job Recruitment Platform</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Strict Body Styling & Instant Loading State */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #0F172A;
+      color: #F8FAFC;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #loading-splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      text-align: center;
+      transition: opacity 0.4s ease-out;
+    }
+
+    .brand-logo-container {
+      width: 72px;
+      height: 72px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #0D6B4F 0%, #10B981 100%);
+      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .brand-logo-icon {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: #FFFFFF;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .brand-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin: 0;
+      background: linear-gradient(90deg, #FFFFFF, #E2E8F0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      color: #94A3B8;
+      margin: -10px 0 0 0;
+      font-weight: 400;
+    }
+
+    .spinner-bar {
+      width: 140px;
+      height: 4px;
+      background-color: #1E293B;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .spinner-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, #0D6B4F, #10B981);
+      border-radius: 4px;
+      animation: indeterminate 1.2s infinite ease-in-out;
+    }
+
+    @keyframes indeterminate {
+      0% {
+        left: -40%;
+        width: 30%;
+      }
+      50% {
+        left: 30%;
+        width: 50%;
+      }
+      100% {
+        left: 100%;
+        width: 30%;
+      }
+    }
+
+    #error-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 24px;
+      background-color: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 14px;
+      max-width: 420px;
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- Strict Body Container & Loading Indicator -->
+  <div id="loading-splash">
+    <div class="brand-logo-container">
+      <svg class="brand-logo-icon" viewBox="0 0 24 24">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+      </svg>
+    </div>
+    <div>
+      <h1 class="brand-title">JobSeeker Ethiopia</h1>
+      <p class="brand-subtitle">AI-Powered Recruitment & Career Engine</p>
+    </div>
+    <div class="spinner-bar"></div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <div id="error-container">
+    <div style="color: #EF4444; font-size: 16px; font-weight: 600;">Unable to Initialize Application</div>
+    <div id="error-detail" style="color: #94A3B8; font-size: 12px; text-align: center;"></div>
+    <button onclick="window.location.reload();" style="margin-top: 8px; background-color: #0D6B4F; color: #FFFFFF; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-weight: 600;">Reload</button>
+  </div>
+
+  <script>
+    "use strict";
+
+    // Strict body runtime protection and graceful loader transition
+    (function() {
+      window.addEventListener('flutter-first-frame', function() {
+        var splash = document.getElementById('loading-splash');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(function() {
+            splash.style.display = 'none';
+          }, 400);
+        }
+      });
+
+      window.addEventListener('error', function(event) {
+        if (!window._flutter || !window._flutter.loader) {
+          var errorContainer = document.getElementById('error-container');
+          var errorDetail = document.getElementById('error-detail');
+          if (errorContainer && errorDetail) {
+            errorDetail.textContent = event.message || 'An unexpected runtime error occurred.';
+            errorContainer.style.display = 'flex';
+          }
+        }
+      });
+    })();
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

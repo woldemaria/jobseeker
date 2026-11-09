@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/job_model.dart';
+import '../../models/application_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
@@ -12,12 +13,16 @@ import '../../shared/widgets/job_card.dart';
 import '../../shared/widgets/advertisement_banner_carousel.dart';
 import '../../shared/widgets/ad_consent_banner.dart';
 import '../matching/match_detail_dialog.dart';
+import '../applications/apply_job_sheet.dart';
 import '../jobs/job_details_screen.dart';
 import '../jobs/saved_jobs_screen.dart';
 import '../jobs/job_search_screen.dart';
+import '../jobs/notice_board_lookup_dialog.dart';
+import '../jobs/salary_benchmarks_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../chat/chat_groups_screen.dart';
 import '../profile/skills_management_screen.dart';
+import '../profile/quiz_list_screen.dart';
 import 'ai_career_assistant_screen.dart';
 import 'job_alerts_screen.dart';
 import '../../data/ethiopian_job_titles_data.dart';
@@ -53,12 +58,17 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
   int _applicationsCount = 0;
   int _savedCount = 0;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _dashboardSearchController.addListener(_onSearchInputChanged);
-    _loadDashboardData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadDashboardData();
+      }
+    });
   }
 
   @override
@@ -98,21 +108,58 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     ).then((_) => _loadDashboardData(silent: true));
   }
 
+  void _handleApply(JobModel job) {
+    if (!widget.authService.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in or create an account to apply.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+    ApplyJobSheet.show(
+      context,
+      job,
+      widget.appRepo,
+      widget.profRepo,
+      () => _loadDashboardData(silent: true),
+    );
+  }
+
   Future<void> _loadDashboardData({
     bool silent = false,
     bool isRefresh = false,
   }) async {
-    if (!silent &&
+    if (mounted &&
+        !silent &&
         !isRefresh &&
         _recentJobs.isEmpty &&
         _recommendations.isEmpty) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
     }
     try {
-      final recsFuture = widget.jobRepo.getRecommendations(limit: 5);
-      final jobsFuture = widget.jobRepo.getJobs();
-      final appsFuture = widget.appRepo.getMyApplications();
-      final savedFuture = widget.jobRepo.getSavedJobs();
+      final isAuth = widget.authService.isAuthenticated;
+
+      final recsFuture = isAuth
+          ? widget.jobRepo
+              .getRecommendations(limit: 5)
+              .catchError((_) => <JobModel>[])
+          : Future.value(<JobModel>[]);
+      final jobsFuture = widget.jobRepo.getJobs().catchError((_) {
+        return <JobModel>[];
+      });
+      final appsFuture = isAuth
+          ? widget.appRepo
+              .getMyApplications()
+              .catchError((_) => <ApplicationModel>[])
+          : Future.value(<ApplicationModel>[]);
+      final savedFuture = isAuth
+          ? widget.jobRepo.getSavedJobs().catchError((_) => <JobModel>[])
+          : Future.value(<JobModel>[]);
 
       final results = await Future.wait([
         recsFuture,
@@ -122,198 +169,44 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
       ]);
 
       if (mounted) {
+        final recs = results[0] as List<JobModel>;
+        final jobs = results[1] as List<JobModel>;
+        final apps = results[2] as List;
+        final saved = results[3] as List;
+
         setState(() {
-          _recommendations = results[0] as List<JobModel>;
-          _recentJobs = (results[1] as List<JobModel>).take(6).toList();
-          _applicationsCount = (results[2] as List).length;
-          _savedCount = (results[3] as List).length;
+          _recommendations = recs;
+          _recentJobs = jobs.take(6).toList();
+          _applicationsCount = apps.length;
+          _savedCount = saved.length;
           _isLoading = false;
+          if (_recentJobs.isEmpty &&
+              _recommendations.isEmpty &&
+              widget.jobRepo.lastErrorMessage != null) {
+            _errorMessage = widget.jobRepo.lastErrorMessage;
+          } else {
+            _errorMessage = null;
+          }
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          if (_recentJobs.isEmpty && _recommendations.isEmpty) {
+            _errorMessage =
+                'Unable to load dashboard data. Please check your network connection.';
+          }
+        });
       }
     }
   }
 
-  Future<void> _showSalaryBenchmarksModal() async {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => FutureBuilder<List<Map<String, dynamic>>>(
-        future: widget.jobRepo.getSalaryBenchmarks(),
-        builder: (context, snapshot) {
-          final benchmarks = snapshot.data ?? [];
-          final loading = snapshot.connectionState == ConnectionState.waiting;
-
-          return DraggableScrollableSheet(
-            initialChildSize: 0.75,
-            minChildSize: 0.5,
-            maxChildSize: 0.95,
-            expand: false,
-            builder: (context, scrollController) => Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Row(
-                    children: [
-                      Icon(Icons.payments_outlined, color: Color(0xFF0D6B4F)),
-                      SizedBox(width: 8),
-                      Text(
-                        'Ethiopian Salary Benchmarks',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Market salary transparency across major Ethiopian sectors (in ETB/month):',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                  ),
-                  const Divider(height: 24),
-                  Expanded(
-                    child: loading
-                        ? const Center(child: CircularProgressIndicator())
-                        : benchmarks.isEmpty
-                        ? const Center(
-                            child: Text('No salary benchmark records found.'),
-                          )
-                        : ListView.builder(
-                            controller: scrollController,
-                            itemCount: benchmarks.length,
-                            itemBuilder: (context, index) {
-                              final b = benchmarks[index];
-                              final median =
-                                  b['median_etb'] ?? b['median'] ?? 0;
-                              final p25 = b['p25_etb'] ?? b['p25'] ?? 0;
-                              final p75 = b['p75_etb'] ?? b['p75'] ?? 0;
-
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(14),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        b['role'] ?? 'Role',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        b['category'] ?? 'Category',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF64748B),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                '25th Percentile',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              Text(
-                                                '$p25 ETB',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              const Text(
-                                                'Median Salary',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF0D6B4F),
-                                                ),
-                                              ),
-                                              Text(
-                                                '$median ETB',
-                                                style: const TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF0D6B4F),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.end,
-                                            children: [
-                                              const Text(
-                                                '75th Percentile',
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                              Text(
-                                                '$p75 ETB',
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
+  void _showSalaryBenchmarksModal() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SalaryBenchmarksScreen(jobRepo: widget.jobRepo),
       ),
     );
   }
@@ -347,7 +240,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
           ),
           builder: (context, snapshot) {
             final radarData = snapshot.data;
-            final nearbyJobs = (radarData?['nearby_jobs'] as List?) ?? [];
+            final nearbyJobs = ((radarData?['jobs'] ?? radarData?['nearby_jobs']) as List?) ?? [];
             final loading = snapshot.connectionState == ConnectionState.waiting;
 
             return DraggableScrollableSheet(
@@ -458,8 +351,17 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                               itemCount: nearbyJobs.length,
                               itemBuilder: (context, index) {
                                 final job = nearbyJobs[index];
-                                final dist = job['distance_km'] ?? 0.0;
-                                final estCost = job['commute_cost_etb'] ?? 15;
+                                final rawDist = job['distance_km'];
+                                final double dist = rawDist is num
+                                    ? rawDist.toDouble()
+                                    : (double.tryParse(rawDist?.toString() ?? '0') ?? 0.0);
+                                final estCost = job['daily_transit_cost_etb'] ??
+                                    '${job['commute_cost_etb'] ?? 15} ETB';
+                                final employerName = job['employer_name'] ??
+                                    (job['employer'] is Map
+                                        ? job['employer']['organization_name']
+                                        : null) ??
+                                    'Employer';
 
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 10),
@@ -475,7 +377,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                                       ),
                                     ),
                                     subtitle: Text(
-                                      '${job['employer_name'] ?? "Employer"} • ${job['location']}\nMinibus commute: ~$estCost ETB',
+                                      '$employerName • ${job['location'] ?? "Ethiopia"}\nTransit: $estCost',
                                       style: const TextStyle(fontSize: 11),
                                     ),
                                     trailing: Column(
@@ -531,6 +433,51 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
     );
   }
 
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 54,
+              color: Color(0xFFDC2626),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to Load Dashboard',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ??
+                  'Network communication error. Please check your connection.',
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _loadDashboardData(),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D6B4F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
@@ -543,6 +490,18 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Notice Board Poster Lookup',
+            onPressed: () {
+              NoticeBoardLookupDialog.show(
+                context,
+                jobRepo: widget.jobRepo,
+                appRepo: widget.appRepo,
+                profRepo: widget.profRepo,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             tooltip: 'Notifications',
@@ -586,7 +545,11 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _errorMessage != null &&
+                  _recentJobs.isEmpty &&
+                  _recommendations.isEmpty
+              ? _buildErrorView()
+              : RefreshIndicator(
               onRefresh: () => _loadDashboardData(isRefresh: true),
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1074,6 +1037,76 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => QuizListScreen(profRepo: widget.profRepo),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.assignment_turned_in, size: 16),
+                            label: const Text(
+                              'Skill Assessments',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0D6B4F),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              NoticeBoardLookupDialog.show(
+                                context,
+                                jobRepo: widget.jobRepo,
+                                appRepo: widget.appRepo,
+                                profRepo: widget.profRepo,
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.qr_code_scanner,
+                              size: 16,
+                              color: Color(0xFF0D6B4F),
+                            ),
+                            label: const Text(
+                              'Scan Poster QR',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF0D6B4F),
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF0D6B4F)),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Promotional Hero Banner Carousel
@@ -1218,6 +1251,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     ..._recommendations.map((job) {
                       return JobCard(
                         job: job,
+                        onApply: () => _handleApply(job),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -1451,6 +1485,7 @@ class _JobSeekerDashboardScreenState extends State<JobSeekerDashboardScreen> {
                     ..._recentJobs.map((job) {
                       return JobCard(
                         job: job,
+                        onApply: () => _handleApply(job),
                         onTap: () {
                           Navigator.push(
                             context,

@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
       } else {
-        setState(() => _errorMessage = resp.message);
+        setState(() => _errorMessage = resp.formattedErrorMessage);
       }
     }
   }

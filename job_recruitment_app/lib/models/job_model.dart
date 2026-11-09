@@ -164,8 +164,12 @@ class JobModel {
           : (json['category'] is Map
                 ? (json['category']['name']?.toString())
                 : (json['category_name']?.toString())),
-      categoryId: json['category_id'],
-      jobTitleId: json['job_title_id'],
+      categoryId: json['category_id'] is int
+          ? json['category_id']
+          : int.tryParse(json['category_id']?.toString() ?? ''),
+      jobTitleId: json['job_title_id'] is int
+          ? json['job_title_id']
+          : int.tryParse(json['job_title_id']?.toString() ?? ''),
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       responsibilities: json['responsibilities'],
@@ -202,7 +206,11 @@ class JobModel {
           ? double.tryParse(json['match_score'].toString())
           : null,
       matchDetails: json['match_details'],
-      applicantsCount: json['applications_count'],
+      applicantsCount: json['applications_count'] is int
+          ? json['applications_count']
+          : int.tryParse(json['applications_count']?.toString() ??
+              json['applicants_count']?.toString() ??
+              ''),
       fraudScore: json['fraud_score'] is int
           ? json['fraud_score']
           : (int.tryParse(json['fraud_score']?.toString() ?? '0') ?? 0),
@@ -236,4 +244,6 @@ class JobModel {
     }
     return 'Up to ${salaryMax!.toStringAsFixed(0)} $currency';
   }
+
+  String get employerName => employer?.organizationName ?? 'Employer';
 }

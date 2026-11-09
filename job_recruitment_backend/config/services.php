@@ -35,4 +35,27 @@ return [
         ],
     ],
 
+    'chapa' => [
+        'public_key' => env('CHAPA_PUBLIC_KEY'),
+        'secret_key' => env('CHAPA_SECRET_KEY'),
+        'webhook_secret' => env('CHAPA_WEBHOOK_SECRET'),
+        'base_url' => env('CHAPA_BASE_URL', 'https://api.chapa.global/v2'),
+        'mode' => env('CHAPA_MODE', 'sandbox'),
+    ],
+
+    'telebirr' => [
+        'app_id' => env('TELEBIRR_APP_ID'),
+        'app_key' => env('TELEBIRR_APP_KEY'),
+        'short_code' => env('TELEBIRR_SHORT_CODE'),
+        'public_key' => env('TELEBIRR_PUBLIC_KEY'),
+        'private_key' => env('TELEBIRR_PRIVATE_KEY'),
+    ],
+
+    'cbe_birr' => [
+        'till_number' => env('CBE_BIRR_TILL_NUMBER'),
+        'app_id' => env('CBE_BIRR_APP_ID'),
+        'app_secret' => env('CBE_BIRR_APP_SECRET'),
+        'public_key' => env('CBE_BIRR_PUBLIC_KEY'),
+    ],
+
 ];

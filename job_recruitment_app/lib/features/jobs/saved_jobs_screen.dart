@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
+import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/job_card.dart';
+import '../applications/apply_job_sheet.dart';
 import 'job_details_screen.dart';
 
 class SavedJobsScreen extends StatefulWidget {
@@ -32,11 +35,15 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSaved();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadSaved();
+    });
   }
 
   Future<void> _loadSaved() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
     try {
       final results = await widget.jobRepo.getSavedJobs();
       if (mounted) {
@@ -50,6 +57,26 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _handleApply(JobModel job) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in or create an account to apply.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+    ApplyJobSheet.show(
+      context,
+      job,
+      widget.appRepo,
+      widget.profRepo,
+      () => _loadSaved(),
+    );
   }
 
   @override
@@ -80,6 +107,7 @@ class _SavedJobsScreenState extends State<SavedJobsScreen> {
                   final job = _savedJobs[index];
                   return JobCard(
                     job: job,
+                    onApply: () => _handleApply(job),
                     onTap: () {
                       Navigator.push(
                         context,

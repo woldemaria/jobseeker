@@ -22,6 +22,30 @@ class ApiResponse {
     this.errors,
     required this.statusCode,
   });
+
+  bool get hasValidationErrors => errors != null && errors!.isNotEmpty;
+
+  /// Returns user-friendly multi-line error description unpacking validation errors or status message
+  String get formattedErrorMessage {
+    if (errors != null && errors!.isNotEmpty) {
+      final List<String> errorLines = [];
+      errors!.forEach((key, val) {
+        if (val is List) {
+          for (final item in val) {
+            errorLines.add(item.toString());
+          }
+        } else if (val is String) {
+          errorLines.add(val);
+        } else if (val != null) {
+          errorLines.add('$key: $val');
+        }
+      });
+      if (errorLines.isNotEmpty) {
+        return errorLines.join('\n');
+      }
+    }
+    return message.isNotEmpty ? message : 'An error occurred (Status $statusCode)';
+  }
 }
 
 class _CacheEntry {
@@ -38,9 +62,20 @@ class ApiService {
   final StorageService _storageService;
   static final Map<String, _CacheEntry> _responseCache = {};
 
+  /// Session expiration callback when server returns HTTP 401 Unauthorized
+  static void Function()? onSessionExpired;
+
   ApiService(this._storageService);
 
   String? get token => _storageService.getToken();
+
+  /// Register mobile device token with backend for push notifications
+  Future<ApiResponse> registerDeviceToken(String deviceToken, {String platform = 'android'}) async {
+    return await post(ApiConstants.deviceToken, {
+      'device_token': deviceToken,
+      'platform': platform,
+    });
+  }
 
   /// Clear in-memory cache for microsecond cache invalidation
   static void clearCache([String? endpointPrefix]) {
@@ -397,6 +432,9 @@ class ApiService {
   }
 
   ApiResponse _processResponse(http.Response response) {
+    if (response.statusCode == 401) {
+      onSessionExpired?.call();
+    }
     try {
       final body = jsonDecode(response.body);
       if (body is Map<String, dynamic>) {

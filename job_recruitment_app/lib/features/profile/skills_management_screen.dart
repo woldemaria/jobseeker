@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/skill_model.dart';
 import '../../repositories/profile_repository.dart';
 import '../../l10n/app_localizations.dart';
+import 'quiz_list_screen.dart';
 
 class SkillsManagementScreen extends StatefulWidget {
   final ProfileRepository profRepo;
@@ -83,6 +84,29 @@ class _SkillsManagementScreenState extends State<SkillsManagementScreen> {
             const Text(
               'Badges earned through Ethiopian skill assessment quizzes and evaluations:',
               style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D6B4F),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => QuizListScreen(profRepo: widget.profRepo),
+                    ),
+                  );
+                  _load();
+                },
+                icon: const Icon(Icons.assignment_turned_in, size: 18),
+                label: const Text('Take Skill Assessment / Earn Badges'),
+              ),
             ),
             const Divider(height: 20),
             if (_badges.isEmpty)

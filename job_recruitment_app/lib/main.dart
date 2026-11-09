@@ -105,6 +105,8 @@ class JobRecruitmentApp extends StatelessWidget {
       title: 'JobSeeker Ethiopia',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       locale: authService.currentLocale,
       supportedLocales: const [Locale('en', ''), Locale('am', '')],
       localizationsDelegates: const [

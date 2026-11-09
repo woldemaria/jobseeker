@@ -427,4 +427,52 @@ class RecruitmentApiTest extends TestCase
 
         $this->assertDatabaseMissing('work_experiences', ['id' => $expId]);
     }
+
+    /** TC-017: Expired password recovery code is strictly rejected */
+    public function test_password_reset_rejects_expired_recovery_code(): void
+    {
+        $user = User::where('email', 'jobseeker@example.com')->first();
+        \Illuminate\Support\Facades\DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => '123456',
+                'created_at' => now()->subMinutes(90)->toDateTimeString(),
+            ]
+        );
+
+        $response = $this->postJson('/api/v1/password/reset', [
+            'email' => $user->email,
+            'token' => '123456',
+            'password' => 'NewSecurePassword@123',
+            'password_confirmation' => 'NewSecurePassword@123',
+        ]);
+
+        $response->assertStatus(422)
+                 ->assertJson(['success' => false])
+                 ->assertJsonPath('message', 'This recovery code has expired. Please request a fresh one.');
+    }
+
+    /** TC-018: Register device token for push notifications */
+    public function test_register_device_token_for_push_notifications(): void
+    {
+        $user = User::where('email', 'jobseeker@example.com')->first();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', "Bearer $token")
+                         ->postJson('/api/v1/notifications/device-token', [
+                             'device_token' => 'fcm_test_device_token_12345_sample',
+                             'platform' => 'android',
+                         ]);
+
+        $response->assertStatus(200)
+                 ->assertJson(['success' => true])
+                 ->assertJsonPath('data.device_token', 'fcm_test_device_token_12345_sample')
+                 ->assertJsonPath('data.device_platform', 'android');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'device_token' => 'fcm_test_device_token_12345_sample',
+            'device_platform' => 'android',
+        ]);
+    }
 }

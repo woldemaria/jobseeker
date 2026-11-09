@@ -18,7 +18,8 @@ return new class extends Migration
         });
 
         Schema::table('applications', function (Blueprint $table) {
-            $table->index(['user_id', 'status'], 'idx_apps_user_status');
+            $applicantCol = Schema::hasColumn('applications', 'user_id') ? 'user_id' : 'profile_id';
+            $table->index([$applicantCol, 'status'], 'idx_apps_user_status');
             $table->index(['job_id', 'status'], 'idx_apps_job_status');
         });
 

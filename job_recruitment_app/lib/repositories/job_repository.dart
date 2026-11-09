@@ -7,6 +7,7 @@ import '../core/constants/api_constants.dart';
 
 class JobRepository {
   final ApiService _apiService;
+  String? lastErrorMessage;
 
   JobRepository(this._apiService);
 
@@ -124,6 +125,7 @@ class JobRepository {
   }
 
   Future<List<JobModel>> getRecommendations({int limit = 20}) async {
+    lastErrorMessage = null;
     final response = await _apiService.get(
       ApiConstants.recommendations,
       queryParams: {'limit': limit.toString()},
@@ -131,6 +133,9 @@ class JobRepository {
     if (response.success && response.data is List) {
       return (response.data as List).map((j) => JobModel.fromJson(j)).toList();
     }
+    lastErrorMessage = response.message.isNotEmpty
+        ? response.message
+        : 'Failed to retrieve recommendations.';
     return [];
   }
 

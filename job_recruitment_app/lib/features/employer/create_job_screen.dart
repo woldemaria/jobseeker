@@ -192,7 +192,7 @@ class _CreateJobScreenState extends State<CreateJobScreen> {
         }
       } else {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(resp.message)));
+            .showSnackBar(SnackBar(content: Text(resp.formattedErrorMessage)));
       }
     }
   }

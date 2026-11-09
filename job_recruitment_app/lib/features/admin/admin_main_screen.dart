@@ -15,6 +15,9 @@ import 'admin_users_screen.dart';
 import 'admin_verifications_screen.dart';
 import 'advertisement_management_screen.dart';
 import 'advertisement_analytics_screen.dart';
+import 'advertising_package_manager_screen.dart';
+import 'admin_campaign_review_screen.dart';
+import '../payment/transaction_history_screen.dart';
 
 class AdminMainScreen extends StatefulWidget {
   final AdminRepository adminRepo;
@@ -40,11 +43,13 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   @override
   void initState() {
     super.initState();
-    _loadStats();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadStats();
+    });
   }
 
   Future<void> _loadStats({bool isRefresh = false}) async {
-    if (!isRefresh && _stats == null) {
+    if (mounted && !isRefresh && _stats == null) {
       setState(() => _isLoadingStats = true);
     }
     try {
@@ -248,7 +253,15 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   '$totalJobs',
                   Icons.work_outline,
                   Colors.purple,
-                  onTap: () => setState(() => _currentIndex = 3),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AdminFraudScreen(adminRepo: widget.adminRepo),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 12),
@@ -258,7 +271,15 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   '$publishedJobs',
                   Icons.check_circle_outline,
                   Colors.green,
-                  onTap: () => setState(() => _currentIndex = 3),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AdminFraudScreen(adminRepo: widget.adminRepo),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -444,6 +465,88 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
               );
             },
           ),
+          const SizedBox(height: 8),
+          ListTile(
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFEDE9FE),
+              child: Icon(Icons.loyalty_outlined, color: Color(0xFF7C3AED)),
+            ),
+            title: const Text(
+              'Advertising Packages & Rates',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Configure Birr pricing, durations, benefits, and placements',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdvertisingPackageManagerScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFDCFCE7),
+              child: Icon(Icons.rate_review_outlined, color: Color(0xFF15803D)),
+            ),
+            title: const Text(
+              'Campaign Approvals & Review',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Review submitted advertising campaigns, approve, or reject',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminCampaignReviewScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          ListTile(
+            tileColor: Theme.of(context).cardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFE0E7FF),
+              child: Icon(Icons.receipt_long, color: Color(0xFF4338CA)),
+            ),
+            title: const Text(
+              'Payment Transactions & Audits',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              'Review Chapa, Telebirr & CBE settlements, receipts, and refunds',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const TransactionHistoryScreen(isAdminView: true),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -516,28 +619,31 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Console'),
-        actions: [
-          IconButton(
-            tooltip: 'Fraud Moderation',
-            icon: const Icon(Icons.shield_outlined, color: Colors.amber),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AdminFraudScreen(adminRepo: widget.adminRepo),
+      appBar: _currentIndex == 0
+          ? AppBar(
+              title: const Text('Admin Console'),
+              actions: [
+                IconButton(
+                  tooltip: 'Fraud Moderation',
+                  icon: const Icon(Icons.shield_outlined, color: Colors.amber),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            AdminFraudScreen(adminRepo: widget.adminRepo),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: _logout,
-          ),
-        ],
-      ),
+                IconButton(
+                  tooltip: 'Logout',
+                  icon: const Icon(Icons.logout, color: Colors.red),
+                  onPressed: _logout,
+                ),
+              ],
+            )
+          : null,
       body: screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,

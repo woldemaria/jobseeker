@@ -44,4 +44,14 @@ class Employer extends Model
     {
         return $this->hasMany(EmployerVerification::class);
     }
+
+    public function advertisements()
+    {
+        return $this->hasMany(Advertisement::class);
+    }
+
+    public function paymentTransactions()
+    {
+        return $this->hasMany(PaymentTransaction::class);
+    }
 }

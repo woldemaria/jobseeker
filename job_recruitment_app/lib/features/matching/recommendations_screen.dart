@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
+import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/job_card.dart';
+import '../applications/apply_job_sheet.dart';
 import '../jobs/job_details_screen.dart';
 import '../profile/skills_management_screen.dart';
+import '../authentication/login_screen.dart';
+import '../../services/api_service.dart';
 import 'match_detail_dialog.dart';
 
 class RecommendationsScreen extends StatefulWidget {
@@ -31,6 +36,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<JobModel> _recommendations = [];
   bool _isLoading = true;
+  String? _errorMessage;
   String _selectedEmploymentType = 'all';
   double _minScore = 0;
   String _searchQuery = '';
@@ -40,7 +46,11 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    _fetchRecommendations();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchRecommendations();
+      }
+    });
   }
 
   @override
@@ -51,26 +61,62 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
   }
 
   void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text.trim().toLowerCase();
-    });
+    if (mounted) {
+      setState(() {
+        _searchQuery = _searchController.text.trim().toLowerCase();
+      });
+    }
   }
 
   Future<void> _fetchRecommendations() async {
-    setState(() => _isLoading = true);
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
     try {
       final results = await widget.jobRepo.getRecommendations();
       if (mounted) {
         setState(() {
           _recommendations = results;
+          if (results.isEmpty && widget.jobRepo.lastErrorMessage != null) {
+            _errorMessage = widget.jobRepo.lastErrorMessage;
+          }
         });
       }
-    } catch (_) {
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage =
+              'Unable to connect to the recommendation engine. Please verify your internet connection and try again.';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _handleApply(JobModel job) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in or create an account to apply.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+    ApplyJobSheet.show(
+      context,
+      job,
+      widget.appRepo,
+      widget.profRepo,
+      () => _fetchRecommendations(),
+    );
   }
 
   List<JobModel> get _filteredRecommendations {
@@ -179,21 +225,164 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _recommendations.isEmpty
-          ? EmptyStateWidget(
-              icon: Icons.psychology_outlined,
-              title: 'No Recommendations Yet',
-              subtitle: 'Add your professional skills, work experiences, and education records to generate multi-criteria AI job recommendations.',
-              actionLabel: 'Add Skills & Complete Profile',
-              onAction: _openSkillsManagement,
-            )
-          : RefreshIndicator(
-              onRefresh: _fetchRecommendations,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
+      body: _buildBody(context, filtered, employmentTypes, scoreFilters, sortOptions),
+    );
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    List<JobModel> filtered,
+    List<Map<String, String>> employmentTypes,
+    List<Map<String, Object>> scoreFilters,
+    List<Map<String, String>> sortOptions,
+  ) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!auth.isAuthenticated && _recommendations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0D6B4F).withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.psychology_outlined,
+                  size: 48,
+                  color: Color(0xFF0D6B4F),
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Sign In for Tailored Matches',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sign in or create a job seeker account to generate multi-criteria AI recommendations based on your skills, experience, and education.',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final jobRepo = Provider.of<JobRepository>(
+                    context,
+                    listen: false,
+                  );
+                  final appRepo = Provider.of<ApplicationRepository>(
+                    context,
+                    listen: false,
+                  );
+                  final profRepo = Provider.of<ProfileRepository>(
+                    context,
+                    listen: false,
+                  );
+                  final apiService = Provider.of<ApiService>(
+                    context,
+                    listen: false,
+                  );
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LoginScreen(
+                        authService: auth,
+                        jobRepo: jobRepo,
+                        appRepo: appRepo,
+                        profRepo: profRepo,
+                        apiService: apiService,
+                      ),
+                    ),
+                  ).then((_) => _fetchRecommendations());
+                },
+                icon: const Icon(Icons.login, size: 18),
+                label: const Text('Sign In / Register'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D6B4F),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_errorMessage != null && _recommendations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.cloud_off_rounded,
+                size: 52,
+                color: Color(0xFFDC2626),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Unable to Load Recommendations',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: _fetchRecommendations,
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0D6B4F),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_recommendations.isEmpty) {
+      return EmptyStateWidget(
+        icon: Icons.psychology_outlined,
+        title: 'No Recommendations Yet',
+        subtitle:
+            'Add your professional skills, work experiences, and education records to generate multi-criteria AI job recommendations.',
+        actionLabel: 'Add Skills & Complete Profile',
+        onAction: _openSkillsManagement,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchRecommendations,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
                   // Multi-Criteria Explanation Banner
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -477,6 +666,7 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                     ...filtered.map((job) {
                       return JobCard(
                         job: job,
+                        onApply: () => _handleApply(job),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -530,7 +720,6 @@ class _RecommendationsScreenState extends State<RecommendationsScreen> {
                     }),
                 ],
               ),
-            ),
-    );
+            );
   }
 }

@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AdsConsentController;
 use App\Http\Controllers\Api\AdvertisementController;
+use App\Http\Controllers\Api\AdvertisingPackageController;
+use App\Http\Controllers\Api\CampaignController;
 use App\Http\Controllers\Api\ApplicationController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CareerAssistantController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\Api\JobAlertController;
 use App\Http\Controllers\Api\JobCategoryController;
 use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RecommendationController;
 use Illuminate\Support\Facades\Route;
@@ -27,15 +30,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-    // Public Authentication Endpoints
-    Route::post('auth/register', [AuthController::class, 'register']);
-    Route::post('register', [AuthController::class, 'register']); // alias
-    Route::post('auth/login', [AuthController::class, 'login'])->name('login');
-    Route::post('login', [AuthController::class, 'login']); // alias
-    Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('password/forgot', [AuthController::class, 'forgotPassword']); // alias
-    Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
-    Route::post('password/reset', [AuthController::class, 'resetPassword']); // alias
+    // Public Authentication Endpoints (Rate-limited against brute-force attacks)
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::post('auth/register', [AuthController::class, 'register']);
+        Route::post('register', [AuthController::class, 'register']); // alias
+        Route::post('auth/login', [AuthController::class, 'login'])->name('login');
+        Route::post('login', [AuthController::class, 'login']); // alias
+        Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
+        Route::post('password/forgot', [AuthController::class, 'forgotPassword']); // alias
+        Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
+        Route::post('password/reset', [AuthController::class, 'resetPassword']); // alias
+    });
 
     // Public Skills, Categories, Job Titles & Jobs Listing
     Route::get('skills', [ProfileController::class, 'listSkills']);
@@ -52,6 +57,19 @@ Route::prefix('v1')->group(function () {
     Route::get('advertisements', [AdvertisementController::class, 'index']);
     Route::post('advertisements/{id}/impression', [AdvertisementController::class, 'recordImpression'])->where('id', '[0-9]+');
     Route::post('advertisements/{id}/click', [AdvertisementController::class, 'recordClick'])->where('id', '[0-9]+');
+
+    // Advertising Packages (Public & Employer Directory)
+    Route::get('ad-packages', [AdvertisingPackageController::class, 'index']);
+    Route::get('ad-packages/{id}', [AdvertisingPackageController::class, 'show'])->where('id', '[0-9]+');
+
+    // Supported Payment Methods & Webhooks (Public Endpoints)
+    Route::get('payments/methods', [PaymentController::class, 'methods']);
+    Route::post('payments/chapa/webhook', [PaymentController::class, 'chapaWebhook'])->name('api.payments.chapa.webhook');
+    Route::post('payments/telebirr/webhook', [PaymentController::class, 'telebirrWebhook'])->name('api.payments.telebirr.webhook');
+    Route::post('payments/cbe/webhook', [PaymentController::class, 'cbeWebhook'])->name('api.payments.cbe.webhook');
+
+    // Ethiopian Geographic Targeting Locations
+    Route::get('campaigns/locations', [CampaignController::class, 'locations']);
 
     // Ads & Privacy Consent Management (Audited & Privacy-Compliant)
     Route::get('ads-consent', [AdsConsentController::class, 'show']);
@@ -156,6 +174,7 @@ Route::prefix('v1')->group(function () {
 
         // Notifications
         Route::get('notifications', [NotificationController::class, 'index']);
+        Route::post('notifications/device-token', [NotificationController::class, 'registerDeviceToken']);
         Route::patch('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->where('id', '[0-9]+');
         Route::patch('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
@@ -194,6 +213,43 @@ Route::prefix('v1')->group(function () {
             Route::get('fraud-jobs', [AdminController::class, 'fraudJobs']);
             Route::post('fraud-jobs/{id}/moderate', [AdminController::class, 'moderateJob'])->where('id', '[0-9]+');
             Route::post('fraud-scan', [AdminController::class, 'scanFraudJobs']);
+
+            // Advertising Packages Admin Management
+            Route::get('ad-packages', [AdvertisingPackageController::class, 'adminIndex']);
+            Route::post('ad-packages', [AdvertisingPackageController::class, 'adminStore']);
+            Route::get('ad-packages/{id}', [AdvertisingPackageController::class, 'show'])->where('id', '[0-9]+');
+            Route::put('ad-packages/{id}', [AdvertisingPackageController::class, 'adminUpdate'])->where('id', '[0-9]+');
+            Route::patch('ad-packages/{id}/toggle-status', [AdvertisingPackageController::class, 'adminToggleStatus'])->where('id', '[0-9]+');
+            Route::delete('ad-packages/{id}', [AdvertisingPackageController::class, 'adminDestroy'])->where('id', '[0-9]+');
+
+            // Admin Advertising Campaigns Review & Approval (Phase 2)
+            Route::get('campaigns', [CampaignController::class, 'adminIndex']);
+            Route::get('campaigns/{id}', [CampaignController::class, 'show'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/approve', [CampaignController::class, 'approve'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/reject', [CampaignController::class, 'reject'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/suspend', [CampaignController::class, 'suspend'])->where('id', '[0-9]+');
+
+            // Admin Payment Transactions & Refunds (Phase 3)
+            Route::get('payments/transactions', [PaymentController::class, 'adminIndex']);
+            Route::get('payments/transactions/{reference}', [PaymentController::class, 'employerTransactionDetail']);
+            Route::post('payments/transactions/{reference}/refund', [PaymentController::class, 'adminRefund']);
+        });
+
+        // Employer Advertising Campaigns & Payments Lifecycle
+        Route::prefix('advertiser')->group(function () {
+            Route::get('campaigns', [CampaignController::class, 'index']);
+            Route::post('campaigns', [CampaignController::class, 'store']);
+            Route::get('campaigns/{id}', [CampaignController::class, 'show'])->where('id', '[0-9]+');
+            Route::put('campaigns/{id}', [CampaignController::class, 'update'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/submit', [CampaignController::class, 'submit'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/pause', [CampaignController::class, 'pause'])->where('id', '[0-9]+');
+            Route::post('campaigns/{id}/resume', [CampaignController::class, 'resume'])->where('id', '[0-9]+');
+
+            // Payment Processing & Transactions (Phase 3)
+            Route::post('payments/initiate', [PaymentController::class, 'initiate'])->middleware('throttle:30,1');
+            Route::get('payments/verify/{reference}', [PaymentController::class, 'verify']);
+            Route::get('payments/transactions', [PaymentController::class, 'employerTransactions']);
+            Route::get('payments/transactions/{reference}', [PaymentController::class, 'employerTransactionDetail']);
         });
 
         // Advertisements & Promotional Campaigns (Admin & Employer Management)

@@ -9,6 +9,7 @@ import 'share_with_friends_modal.dart';
 class JobCard extends StatelessWidget {
   final JobModel job;
   final VoidCallback onTap;
+  final VoidCallback? onApply;
   final VoidCallback? onSaveToggle;
   final VoidCallback? onMatchTap;
 
@@ -16,6 +17,7 @@ class JobCard extends StatelessWidget {
     super.key,
     required this.job,
     required this.onTap,
+    this.onApply,
     this.onSaveToggle,
     this.onMatchTap,
   });
@@ -51,10 +53,10 @@ class JobCard extends StatelessWidget {
                       children: [
                         Text(
                           job.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF0F172A),
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -112,6 +114,8 @@ class JobCard extends StatelessWidget {
                               address: job.location,
                               organizationName: job.employer?.organizationName,
                             );
+                          } else if (val == 'apply') {
+                            (onApply ?? onTap)();
                           } else if (val == 'details') {
                             onTap();
                           }
@@ -128,6 +132,20 @@ class JobCard extends StatelessWidget {
                                 ),
                                 SizedBox(width: 8),
                                 Text('Share Vacancy'),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'apply',
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.send_rounded,
+                                  size: 18,
+                                  color: Color(0xFF0D6B4F),
+                                ),
+                                SizedBox(width: 8),
+                                Text('Apply Now'),
                               ],
                             ),
                           ),
@@ -280,14 +298,19 @@ class JobCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF334155)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         skill.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF334155),
+                          color:
+                              Theme.of(context).brightness == Brightness.dark
+                                  ? const Color(0xFFE2E8F0)
+                                  : const Color(0xFF334155),
                         ),
                       ),
                     );
@@ -295,7 +318,12 @@ class JobCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 12),
-              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+              Divider(
+                height: 1,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFF1F5F9),
+              ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -355,7 +383,7 @@ class JobCard extends StatelessWidget {
                         )
                       else
                         OutlinedButton.icon(
-                          onPressed: onTap,
+                          onPressed: onApply ?? onTap,
                           icon: const Icon(
                             Icons.send_rounded,
                             size: 13,

@@ -68,6 +68,14 @@ class ProfileRepository {
     return await _apiService.delete('${ApiConstants.profileSkills}/$skillId');
   }
 
+  Future<List<Map<String, dynamic>>> getEducation() async {
+    final response = await _apiService.get(ApiConstants.profileEducation);
+    if (response.success && response.data is List) {
+      return List<Map<String, dynamic>>.from(response.data);
+    }
+    return [];
+  }
+
   Future<ApiResponse> addEducation(Map<String, dynamic> data) async {
     return await _apiService.post(ApiConstants.profileEducation, data);
   }
@@ -78,6 +86,14 @@ class ProfileRepository {
 
   Future<ApiResponse> removeEducation(int id) async {
     return await _apiService.delete('${ApiConstants.profileEducation}/$id');
+  }
+
+  Future<List<Map<String, dynamic>>> getExperience() async {
+    final response = await _apiService.get(ApiConstants.profileExperience);
+    if (response.success && response.data is List) {
+      return List<Map<String, dynamic>>.from(response.data);
+    }
+    return [];
   }
 
   Future<ApiResponse> addExperience(Map<String, dynamic> data) async {
@@ -161,18 +177,26 @@ class ProfileRepository {
   }
 
   Future<List<Map<String, dynamic>>> getQuizzes() async {
-    final response = await _apiService.get('/quizzes');
+    final response = await _apiService.get(ApiConstants.quizzes);
     if (response.success && response.data is List) {
       return List<Map<String, dynamic>>.from(response.data);
     }
     return [];
   }
 
+  Future<Map<String, dynamic>?> getQuizDetails(int quizId) async {
+    final response = await _apiService.get(ApiConstants.quizDetail(quizId));
+    if (response.success && response.data is Map) {
+      return Map<String, dynamic>.from(response.data as Map);
+    }
+    return null;
+  }
+
   Future<ApiResponse> submitQuiz(
     int quizId,
     Map<String, dynamic> answers,
   ) async {
-    return await _apiService.post('/quizzes/$quizId/submit', {
+    return await _apiService.post(ApiConstants.quizSubmit(quizId), {
       'answers': answers,
     });
   }

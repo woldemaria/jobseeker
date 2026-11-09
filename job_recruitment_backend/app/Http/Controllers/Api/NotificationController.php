@@ -43,4 +43,26 @@ class NotificationController extends BaseApiController
 
         return $this->successResponse(null, 'All notifications marked as read.');
     }
+
+    /**
+     * Register device push notification token (FCM / APNs).
+     */
+    public function registerDeviceToken(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'device_token' => 'required|string|max:255',
+            'platform' => 'nullable|string|in:android,ios,web',
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'device_token' => $validated['device_token'],
+            'device_platform' => $validated['platform'] ?? 'android',
+        ]);
+
+        return $this->successResponse([
+            'device_token' => $user->device_token,
+            'device_platform' => $user->device_platform,
+        ], 'Device token registered successfully for push notifications.');
+    }
 }

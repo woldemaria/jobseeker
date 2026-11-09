@@ -13,7 +13,9 @@ import '../authentication/login_screen.dart';
 import 'employer_verification_screen.dart';
 import 'job_applicants_screen.dart';
 import '../jobs/job_details_screen.dart';
-import '../admin/advertisement_management_screen.dart';
+import '../advertising/advertising_packages_screen.dart';
+import 'employer_campaigns_screen.dart';
+import '../payment/transaction_history_screen.dart';
 
 class EmployerDashboardScreen extends StatefulWidget {
   final JobRepository jobRepo;
@@ -42,16 +44,22 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
   List<JobModel> _jobs = [];
   Map<String, dynamic>? _employerData;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _load();
+    });
   }
 
   Future<void> _load({bool isRefresh = false}) async {
-    if (!isRefresh && _jobs.isEmpty) {
-      setState(() => _isLoading = true);
+    if (mounted && !isRefresh && _jobs.isEmpty) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
     }
     try {
       final jobs = await widget.jobRepo.getEmployerJobs();
@@ -62,11 +70,18 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
           _jobs = jobs;
           _employerData = profileResp.success ? profileResp.data : null;
           _isLoading = false;
+          _errorMessage = null;
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _isLoading = false;
+          if (_jobs.isEmpty) {
+            _errorMessage =
+                'Unable to load employer dashboard. Please check your connection and retry.';
+          }
+        });
       }
     }
   }
@@ -150,13 +165,61 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
     );
   }
 
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_off_rounded,
+              size: 54,
+              color: Color(0xFFDC2626),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Unable to Load Employer Dashboard',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ??
+                  'Network communication error. Please check your connection.',
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _load(),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D6B4F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final user = widget.authService.currentUser;
     final orgName =
-        _employerData?['organization_name'] ?? 'Employer Organization';
+        _employerData?['organization_name'] ?? user?.name ?? 'Employer Organization';
     final verificationStatus =
         _employerData?['verification_status'] ?? 'pending';
+    final orgEmail =
+        _employerData?['email'] ?? user?.email ?? 'Verified Recruitment Account';
     final totalApplicants = _jobs.fold<int>(
       0,
       (sum, j) => sum + (j.applicantsCount ?? 0),
@@ -173,7 +236,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const AdvertisementManagementScreen(),
+                  builder: (_) => const EmployerCampaignsScreen(),
                 ),
               );
             },
@@ -190,7 +253,9 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _errorMessage != null && _jobs.isEmpty
+              ? _buildErrorView()
+              : RefreshIndicator(
               onRefresh: () => _load(isRefresh: true),
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -257,8 +322,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _employerData?['email'] ??
-                              'Verified Recruitment Account',
+                          orgEmail,
                           style: const TextStyle(
                             color: Colors.white70,
                             fontSize: 13,
@@ -314,7 +378,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) =>
-                                const AdvertisementManagementScreen(),
+                                const EmployerCampaignsScreen(),
                           ),
                         );
                       },
@@ -338,13 +402,80 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const AdvertisingPackagesScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.loyalty_outlined,
+                        color: Color(0xFFD97706),
+                      ),
+                      label: const Text(
+                        'View Advertising Packages & Pricing Rates',
+                        style: TextStyle(
+                          color: Color(0xFFD97706),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD97706)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const TransactionHistoryScreen(isAdminView: false),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.receipt_long,
+                        color: Color(0xFF4338CA),
+                      ),
+                      label: const Text(
+                        'Payment History, Receipts & Invoices',
+                        style: TextStyle(
+                          color: Color(0xFF4338CA),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF4338CA)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Promotional Campaigns Banner
-                  const AdvertisementBannerCarousel(
+                  AdvertisementBannerCarousel(
                     placement: 'dashboard',
                     layoutType: BannerLayoutType.hero,
                     height: 180,
+                    onNavigateTab: widget.onTabChange,
                   ),
                   const SizedBox(height: 24),
 
@@ -426,9 +557,24 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 1,
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Column(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => JobDetailsScreen(
+                                  jobId: job.id,
+                                  jobRepo: widget.jobRepo,
+                                  appRepo: widget.appRepo,
+                                  profRepo: widget.profRepo,
+                                ),
+                              ),
+                            ).then((_) => _load(isRefresh: true));
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
@@ -548,6 +694,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                 ],
                               ),
                             ],
+                          ),
                           ),
                         ),
                       );

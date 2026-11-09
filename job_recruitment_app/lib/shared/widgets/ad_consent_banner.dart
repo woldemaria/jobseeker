@@ -26,16 +26,20 @@ class _AdConsentBannerState extends State<AdConsentBanner> {
   @override
   void initState() {
     super.initState();
-    _checkVisibility();
+    _isVisible =
+        !widget.storageService.hasConsentRecorded() ||
+        widget.storageService.requiresPolicyReconsent('1.0');
   }
 
   void _checkVisibility() {
     final requiresConsent =
         !widget.storageService.hasConsentRecorded() ||
         widget.storageService.requiresPolicyReconsent('1.0');
-    setState(() {
-      _isVisible = requiresConsent;
-    });
+    if (mounted) {
+      setState(() {
+        _isVisible = requiresConsent;
+      });
+    }
   }
 
   Future<void> _handleQuickChoice(bool acceptAll) async {

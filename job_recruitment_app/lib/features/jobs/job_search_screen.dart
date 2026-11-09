@@ -1,31 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/job_model.dart';
 import '../../repositories/application_repository.dart';
 import '../../repositories/job_repository.dart';
 import '../../repositories/profile_repository.dart';
+import '../../services/auth_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/job_card.dart';
 import '../../shared/widgets/advertisement_banner_carousel.dart';
 import '../../data/ethiopian_job_titles_data.dart';
 import '../matching/match_detail_dialog.dart';
+import '../applications/apply_job_sheet.dart';
 import 'job_details_screen.dart';
+import 'notice_board_lookup_dialog.dart';
 
 class JobSearchScreen extends StatefulWidget {
   final JobRepository jobRepo;
-  final ApplicationRepository appRepo;
-  final ProfileRepository profRepo;
+  final ApplicationRepository? appRepo;
+  final ProfileRepository? profRepo;
   final String? initialCategory;
   final String? initialKeyword;
+  final String? initialQuery;
 
   const JobSearchScreen({
     super.key,
     required this.jobRepo,
-    required this.appRepo,
-    required this.profRepo,
+    this.appRepo,
+    this.profRepo,
     this.initialCategory,
     this.initialKeyword,
+    this.initialQuery,
   });
 
   @override
@@ -57,8 +63,9 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     if (widget.initialCategory != null && widget.initialCategory!.isNotEmpty) {
       _selectedCategory = widget.initialCategory!;
     }
-    if (widget.initialKeyword != null && widget.initialKeyword!.isNotEmpty) {
-      _searchController.text = widget.initialKeyword!;
+    final kw = widget.initialKeyword ?? widget.initialQuery;
+    if (kw != null && kw.isNotEmpty) {
+      _searchController.text = kw;
     }
     _searchController.addListener(_onSearchChanged);
     _performSearch();
@@ -130,6 +137,31 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
     _performSearch();
   }
 
+  void _handleApply(JobModel job) {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    if (!auth.isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please sign in or create an account to apply.'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+    final effectiveAppRepo = widget.appRepo ??
+        Provider.of<ApplicationRepository>(context, listen: false);
+    final effectiveProfRepo = widget.profRepo ??
+        Provider.of<ProfileRepository>(context, listen: false);
+
+    ApplyJobSheet.show(
+      context,
+      job,
+      effectiveAppRepo,
+      effectiveProfRepo,
+      () => _performSearch(),
+    );
+  }
+
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
@@ -141,11 +173,27 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final effectiveAppRepo = widget.appRepo ??
+        Provider.of<ApplicationRepository>(context, listen: false);
+    final effectiveProfRepo = widget.profRepo ??
+        Provider.of<ProfileRepository>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(loc.t('search_jobs')),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'Notice Board Poster Lookup',
+            onPressed: () {
+              NoticeBoardLookupDialog.show(
+                context,
+                jobRepo: widget.jobRepo,
+                appRepo: effectiveAppRepo,
+                profRepo: effectiveProfRepo,
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _performSearch,
@@ -411,6 +459,7 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                         final job = _jobs[jobIndex];
                         return JobCard(
                           job: job,
+                          onApply: () => _handleApply(job),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -418,8 +467,8 @@ class _JobSearchScreenState extends State<JobSearchScreen> {
                                 builder: (_) => JobDetailsScreen(
                                   jobId: job.id,
                                   jobRepo: widget.jobRepo,
-                                  appRepo: widget.appRepo,
-                                  profRepo: widget.profRepo,
+                                  appRepo: effectiveAppRepo,
+                                  profRepo: effectiveProfRepo,
                                 ),
                               ),
                             ).then((_) => _performSearch());

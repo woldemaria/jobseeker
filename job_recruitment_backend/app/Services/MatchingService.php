@@ -292,9 +292,99 @@ class MatchingService
         return ['score' => 40.0];
     }
 
+    /**
+     * Employment type synonyms used to normalize free-form strings before comparing
+     * the candidate's work history with the job's employment_type requirement.
+     */
+    private const EMPLOYMENT_TYPE_SYNONYMS = [
+        'full_time' => ['full_time', 'fulltime', 'full-time', 'permanent', 'full time'],
+        'part_time' => ['part_time', 'parttime', 'part-time', 'part time'],
+        'contract' => ['contract', 'contractor', 'freelance', 'freelancer', 'consultant'],
+        'internship' => ['internship', 'intern', 'trainee', 'graduate_trainee'],
+        'temporary' => ['temporary', 'temp', 'seasonal', 'casual'],
+    ];
+
     private function analyzeEmploymentType(JobSeekerProfile $profile, Job $job): array
     {
-        return ['score' => 100.0];
+        $jobType = $this->normalizeEmploymentType((string) ($job->employment_type ?? ''));
+
+        if ($jobType === null) {
+            return [
+                'score' => 80.0,
+                'status' => 'Not Specified',
+                'explanation' => 'No employment type mandated by this job.',
+            ];
+        }
+
+        // Derive the candidate's familiar employment types from their work history.
+        $experiencedTypes = $profile->workExperiences
+            ->pluck('employment_type')
+            ->filter()
+            ->map(fn ($type) => $this->normalizeEmploymentType((string) $type))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($experiencedTypes->isEmpty()) {
+            // No history signal at all: neutral-ish default so the factor neither
+            // fully rewards nor punishes the candidate.
+            return [
+                'score' => 70.0,
+                'status' => 'Not Specified',
+                'explanation' => "Candidate work history does not indicate employment types; job expects '{$jobType}'.",
+            ];
+        }
+
+        if ($experiencedTypes->contains($jobType)) {
+            return [
+                'score' => 100.0,
+                'status' => 'Meets Requirement',
+                'explanation' => "Candidate has worked in '{$jobType}' roles previously.",
+            ];
+        }
+
+        // Related-but-different arrangements earn partial credit (e.g. intern who
+        // now applies to full-time, or contractor applying to permanent).
+        $partialPairs = [
+            'full_time' => ['contract', 'part_time'],
+            'part_time' => ['full_time', 'temporary'],
+            'contract' => ['full_time', 'temporary'],
+            'internship' => ['temporary'],
+            'temporary' => ['part_time', 'internship'],
+        ];
+
+        if (in_array($jobType, $partialPairs[$jobType] ?? [], true) && $experiencedTypes->intersect($partialPairs[$jobType])->isNotEmpty()) {
+            return [
+                'score' => 60.0,
+                'status' => 'Partially Matches',
+                'explanation' => "Candidate has related '{$experiencedTypes->implode(', ')}' experience but no '{$jobType}' history.",
+            ];
+        }
+
+        return [
+            'score' => 30.0,
+            'status' => 'Does Not Match',
+            'explanation' => "Candidate has only '{$experiencedTypes->implode(', ')}' experience while the job expects '{$jobType}'.",
+        ];
+    }
+
+    /**
+     * Normalize a free-form employment type label into a canonical key.
+     */
+    private function normalizeEmploymentType(string $type): ?string
+    {
+        $value = strtolower(trim($type));
+        if ($value === '') {
+            return null;
+        }
+
+        foreach (self::EMPLOYMENT_TYPE_SYNONYMS as $canonical => $variants) {
+            if (in_array($value, $variants, true)) {
+                return $canonical;
+            }
+        }
+
+        return $value;
     }
 
     private function analyzeOtherRequirements(JobSeekerProfile $profile, Job $job): array

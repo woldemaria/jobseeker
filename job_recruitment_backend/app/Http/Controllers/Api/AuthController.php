@@ -197,7 +197,7 @@ class AuthController extends BaseApiController
             return $this->errorResponse('Invalid or expired password reset code. Please request a new code.', 422);
         }
 
-        if (now()->diffInMinutes($record->created_at) > 60) {
+        if (\Illuminate\Support\Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
             DB::table('password_reset_tokens')->where('email', $validated['email'])->delete();
             return $this->errorResponse('This recovery code has expired. Please request a fresh one.', 422);
         }

@@ -25,3 +25,6 @@ job_recruitment_app/.pub-cache/
 job_recruitment_app/.pub/
 job_recruitment_app/build/
 job_recruitment_app/.packages
+
+# Modernize tooling
+.github/modernize/

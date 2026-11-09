@@ -384,7 +384,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           );
         }
       } else {
-        setState(() => _errorMessage = resp.message);
+        setState(() => _errorMessage = resp.formattedErrorMessage);
       }
     }
   }

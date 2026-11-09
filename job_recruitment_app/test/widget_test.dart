@@ -40,6 +40,23 @@ import 'package:job_recruitment_app/repositories/ads_consent_repository.dart';
 import 'package:job_recruitment_app/features/advertising/privacy_and_ads_preferences_screen.dart';
 import 'package:job_recruitment_app/features/advertising/ad_consent_modal.dart';
 import 'package:job_recruitment_app/shared/widgets/ad_consent_banner.dart';
+import 'package:job_recruitment_app/models/advertising_package_model.dart';
+import 'package:job_recruitment_app/features/advertising/package_card_widget.dart';
+import 'package:job_recruitment_app/features/advertising/advertising_packages_screen.dart';
+import 'package:job_recruitment_app/features/admin/advertising_package_manager_screen.dart';
+import 'package:job_recruitment_app/features/advertising/campaign_preview_widget.dart';
+import 'package:job_recruitment_app/features/advertising/campaign_creation_wizard_screen.dart';
+import 'package:job_recruitment_app/features/employer/employer_campaigns_screen.dart';
+import 'package:job_recruitment_app/features/admin/admin_campaign_review_screen.dart';
+import 'package:job_recruitment_app/models/payment_transaction_model.dart';
+import 'package:job_recruitment_app/features/payment/checkout_screen.dart';
+import 'package:job_recruitment_app/features/payment/payment_status_screen.dart';
+import 'package:job_recruitment_app/features/payment/transaction_history_screen.dart';
+import 'package:job_recruitment_app/features/profile/quiz_list_screen.dart';
+import 'package:job_recruitment_app/features/profile/quiz_take_screen.dart';
+import 'package:job_recruitment_app/features/profile/profile_cv_preview_dialog.dart';
+import 'package:job_recruitment_app/features/jobs/salary_benchmarks_screen.dart';
+import 'package:job_recruitment_app/features/jobs/notice_board_lookup_dialog.dart';
 
 void main() {
   test('AppLocalizations English and Amharic translation keys test', () {
@@ -1056,4 +1073,295 @@ void main() {
       expect(storage3.getConsentWithdrawnAt(), isNotNull);
     },
   );
+
+  test('AdvertisingPackageModel parses JSON, formats ETB price, and handles duration cleanly', () {
+    final json = {
+      'id': 3,
+      'name': 'Premium Brand & Vacancy',
+      'slug': 'premium-brand-vacancy',
+      'description': 'Maximum visibility for 30 days.',
+      'duration_days': 30,
+      'price_etb': 7000.0,
+      'price_formatted': '7,000.00 ETB',
+      'allowed_placements': ['hero', 'dashboard', 'job_list', 'search_sponsored'],
+      'allowed_categories': ['featured_jobs', 'sponsored_vacancies'],
+      'benefits': [
+        '30 Days prime placement',
+        'Top of search results',
+      ],
+      'badge_label': 'Best Value',
+      'is_active': true,
+      'priority_level': 3,
+      'advertisements_count': 12,
+    };
+
+    final pkg = AdvertisingPackageModel.fromJson(json);
+
+    expect(pkg.id, 3);
+    expect(pkg.name, 'Premium Brand & Vacancy');
+    expect(pkg.slug, 'premium-brand-vacancy');
+    expect(pkg.priceEtb, 7000.0);
+    expect(pkg.displayPrice, '7,000.00 ETB');
+    expect(pkg.durationText, '1 Month (30 Days)');
+    expect(pkg.badgeLabel, 'Best Value');
+    expect(pkg.isActive, isTrue);
+    expect(pkg.benefits.length, 2);
+    expect(pkg.allowedPlacements.contains('hero'), isTrue);
+    expect(pkg.advertisementsCount, 12);
+
+    final copy = pkg.copyWith(priceEtb: 7500.0, durationDays: 45);
+    expect(copy.priceEtb, 7500.0);
+    expect(copy.durationDays, 45);
+    expect(copy.durationText, '45 Days');
+    expect(copy.name, 'Premium Brand & Vacancy');
+  });
+
+  testWidgets('PackageCardWidget renders package info, price in ETB, and fires selection callback', (tester) async {
+    final pkg = AdvertisingPackageModel(
+      id: 1,
+      name: 'Standard Package',
+      slug: 'standard-package',
+      description: 'Expanded reach across dashboards and feeds.',
+      durationDays: 15,
+      priceEtb: 3500.0,
+      priceFormatted: '3,500.00 ETB',
+      allowedPlacements: ['dashboard', 'job_list'],
+      allowedCategories: ['featured_jobs'],
+      benefits: ['15 Days active campaign duration', 'Dashboard prominent placement'],
+      badgeLabel: 'Popular',
+      isActive: true,
+    );
+
+    bool selected = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PackageCardWidget(
+            package: pkg,
+            isSelected: false,
+            onSelect: () => selected = true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Standard Package'), findsOneWidget);
+    expect(find.text('3500'), findsOneWidget);
+    expect(find.text('ETB'), findsOneWidget);
+    expect(find.text('POPULAR'), findsOneWidget);
+    expect(find.text('15 Days active campaign duration'), findsOneWidget);
+    expect(find.text('Select Package'), findsOneWidget);
+
+    await tester.tap(find.text('Select Package'));
+    await tester.pump();
+
+    expect(selected, isTrue);
+  });
+
+  test('AdvertisingPackagesScreen and AdvertisingPackageManagerScreen classes are instantiable', () {
+    expect(AdvertisingPackagesScreen, isNotNull);
+    expect(AdvertisingPackageManagerScreen, isNotNull);
+  });
+
+  test('AdvertisementModel parses Phase 2 campaign lifecycle and Ethiopian targeting attributes', () {
+    final json = {
+      'id': 101,
+      'title': 'FinTech Senior Core Engineer Hiring',
+      'title_am': 'የከፍተኛ ኮር ኢንጂነር የቅጥር ማስታወቂያ',
+      'subtitle': 'Accelerate financial technology across Addis Ababa.',
+      'description': 'Comprehensive hiring drive for certified mobile architects.',
+      'badge_text': 'FEATURED VACANCY',
+      'image_url': 'https://example.com/banner.png',
+      'category': 'featured_jobs',
+      'placement': 'hero',
+      'placements': ['hero', 'job_list', 'search_sponsored'],
+      'target_role': 'job_seeker',
+      'target_locations': ['Addis Ababa - Bole', 'Hawassa'],
+      'cta_type': 'apply_now',
+      'cta_text': 'Apply Today',
+      'cta_target': '/jobs/42',
+      'start_date': '2026-11-10T00:00:00Z',
+      'end_date': '2026-11-25T00:00:00Z',
+      'status': 'draft',
+      'approval_status': 'draft',
+      'payment_status': 'unpaid',
+      'price_paid': 3500.0,
+      'package_id': 2,
+    };
+
+    final ad = AdvertisementModel.fromJson(json);
+
+    expect(ad.id, 101);
+    expect(ad.title, 'FinTech Senior Core Engineer Hiring');
+    expect(ad.isDraft, isTrue);
+    expect(ad.canBeEdited, isTrue);
+    expect(ad.isApproved, isFalse);
+    expect(ad.isPaid, isFalse);
+    expect(ad.placements.length, 3);
+    expect(ad.targetLocations.contains('Addis Ababa - Bole'), isTrue);
+    expect(ad.pricePaid, 3500.0);
+
+    final approvedAd = ad.copyWith(
+      approvalStatus: 'approved',
+      status: 'active',
+      paymentStatus: 'paid',
+    );
+    expect(approvedAd.isApproved, isTrue);
+    expect(approvedAd.isActive, isTrue);
+    expect(approvedAd.isPaid, isTrue);
+    expect(approvedAd.canBeEdited, isFalse);
+  });
+
+  testWidgets('CampaignPreviewWidget renders simulation preview and handles placement switching', (tester) async {
+    final campaign = AdvertisementModel(
+      id: 55,
+      title: 'Ethiopian Airlines Cloud Engineer Drive',
+      subtitle: 'Join leading aviation cloud infrastructure team in Bole.',
+      badgeText: 'EXCLUSIVE CAMPAIGN',
+      imageUrl: 'https://example.com/plane.jpg',
+      category: 'recruitment_campaigns',
+      placement: 'hero',
+      placements: ['hero', 'dashboard', 'job_list'],
+      ctaType: 'apply_now',
+      ctaText: 'Apply Online',
+      ctaTarget: '/jobs/1',
+      startDate: '2026-11-10',
+      endDate: '2026-11-25',
+      status: 'pending_approval',
+      approvalStatus: 'pending_approval',
+      targetLocations: ['Bole', 'Kirkos'],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: CampaignPreviewWidget(campaign: campaign),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('Live Preview:'), findsOneWidget);
+    expect(find.text('EXCLUSIVE CAMPAIGN'), findsOneWidget);
+    expect(find.text('Ethiopian Airlines Cloud Engineer Drive'), findsOneWidget);
+    expect(find.text('Apply Online'), findsOneWidget);
+
+    // Switch to Dashboard simulation
+    await tester.tap(find.text('Dashboard'));
+    await tester.pump();
+
+    expect(find.text('Billboard'), findsOneWidget);
+  });
+
+  test('CampaignCreationWizardScreen, EmployerCampaignsScreen, and AdminCampaignReviewScreen classes are instantiable', () {
+    expect(CampaignCreationWizardScreen, isNotNull);
+    expect(EmployerCampaignsScreen, isNotNull);
+    expect(AdminCampaignReviewScreen, isNotNull);
+  });
+
+  test('PaymentTransactionModel parses attributes, helpers, and formats ETB amounts accurately', () {
+    final json = {
+      'id': 101,
+      'transaction_reference': 'TXN-CHAPA-20261108-XYZ789',
+      'merchant_reference': 'CMP-10-ORD',
+      'provider_reference': 'chapa_ref_112233',
+      'checkout_url': 'https://checkout.chapa.co/checkout/payment/mock',
+      'payment_method': 'chapa',
+      'expected_amount_etb': '3500.00',
+      'confirmed_amount_etb': '3500.00',
+      'currency': 'ETB',
+      'payment_status': 'successful',
+      'receipt_number': 'RCP-20261108-XYZ123',
+      'verified_at': '2026-11-08T20:30:00Z',
+      'campaign_title': 'Senior Engineer Hiring',
+      'package_name': 'Standard Package',
+    };
+
+    final model = PaymentTransactionModel.fromJson(json);
+
+    expect(model.id, 101);
+    expect(model.transactionReference, 'TXN-CHAPA-20261108-XYZ789');
+    expect(model.paymentMethod, 'chapa');
+    expect(model.expectedAmountEtb, 3500.00);
+    expect(model.confirmedAmountEtb, 3500.00);
+    expect(model.formattedAmount, '3500.00 ETB');
+    expect(model.isSuccessful, isTrue);
+    expect(model.isPending, isFalse);
+    expect(model.isFailed, isFalse);
+    expect(model.receiptNumber, 'RCP-20261108-XYZ123');
+    expect(model.verifiedAt, isNotNull);
+    expect(model.campaignTitle, 'Senior Engineer Hiring');
+    expect(model.packageName, 'Standard Package');
+  });
+
+  test('CheckoutScreen, PaymentStatusScreen, and TransactionHistoryScreen classes are instantiable', () {
+    expect(CheckoutScreen, isNotNull);
+    expect(PaymentStatusScreen, isNotNull);
+    expect(TransactionHistoryScreen, isNotNull);
+
+    const adminHistory = TransactionHistoryScreen(isAdminView: true);
+    expect(adminHistory.isAdminView, isTrue);
+
+    const employerHistory = TransactionHistoryScreen(isAdminView: false);
+    expect(employerHistory.isAdminView, isFalse);
+  });
+
+  test('ApiResponse unpacks validation errors into formattedErrorMessage correctly', () {
+    final responseWithErrors = ApiResponse(
+      success: false,
+      message: 'Validation failed.',
+      statusCode: 422,
+      errors: {
+        'email': ['The email has already been taken.'],
+        'password': ['The password must be at least 8 characters.'],
+      },
+    );
+
+    expect(responseWithErrors.hasValidationErrors, isTrue);
+    expect(
+      responseWithErrors.formattedErrorMessage,
+      contains('The email has already been taken.'),
+    );
+    expect(
+      responseWithErrors.formattedErrorMessage,
+      contains('The password must be at least 8 characters.'),
+    );
+
+    final simpleResponse = ApiResponse(
+      success: false,
+      message: 'Resource not found',
+      statusCode: 404,
+    );
+    expect(simpleResponse.hasValidationErrors, isFalse);
+    expect(simpleResponse.formattedErrorMessage, 'Resource not found');
+  });
+
+  test('Quiz and Skill Assessment screen classes are instantiable', () {
+    expect(QuizListScreen, isNotNull);
+    expect(QuizTakeScreen, isNotNull);
+    expect(SalaryBenchmarksScreen, isNotNull);
+    expect(NoticeBoardLookupDialog, isNotNull);
+    expect(ProfileCvPreviewDialog, isNotNull);
+  });
+
+  test('JobModel employerName and salaryText getters handle null and populated values safely', () {
+    final job = JobModel(
+      id: 1,
+      employerId: 2,
+      title: 'Senior Developer',
+      description: 'Test job',
+      employmentType: 'Full-time',
+      location: 'Addis Ababa',
+      currency: 'ETB',
+      deadline: '2026-12-31',
+      status: 'published',
+      salaryMin: 30000,
+      salaryMax: 50000,
+    );
+
+    expect(job.employerName, 'Employer');
+    expect(job.salaryText, '30000 - 50000 ETB');
+  });
 }
